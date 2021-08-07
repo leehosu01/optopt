@@ -41,11 +41,13 @@ class OPT:
         self.Variables.make_frozen()
         self.normalizer = Normalizer(self.using_features)
 
-        self.observation_lock_turn = asyncio.Lock()
-        self.action_lock_turn = asyncio.Lock()
+        self.observation_lock_set = asyncio.Lock()
+        self.observation_lock_get = asyncio.Lock()
+        await self.observation_lock_set.acquire()
 
-        self.observation_lock = asyncio.Lock()
-        self.action_lock = asyncio.Lock()
+        self.action_lock_set = asyncio.Lock()
+        self.action_lock_get = asyncio.Lock()
+        await self.action_lock_get.acquire()
 
 
         self.env = opt_env.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
@@ -62,36 +64,37 @@ class OPT:
         
     async def set_observation(self, obs_info, obj, done):
         devprint("OPT.set_observation", obs_info, obj, done)
-        async with self.observation_lock:
-            self.observe_logger.write(obs_info)
-            self.object_logger.write([obj])
-            self.train_finish = done
-            self.observation_lock_turn.release()
+        await self.observation_lock_set.acquire()
+        self.observe_logger.write(obs_info)
+        self.object_logger.write([obj])
+        self.train_finish = done
+        self.observation_lock_get.release()
     async def get_observation(self): # get이 먼저 발생
         devprint("OPT.get_observation")
-        async with self.observation_lock:
-            await self.observation_lock_turn.acquire()
-            Obs = self.normalizer(self.observe_logger.read().values)
-            Done = self.train_finish
-            Rew = 0
-            step_type = 2 if Done else 1
-            if len(self.object_logger.read()) > 1:
-                Rew = self.object_logger.iloc[0].values[-1] - self.object_logger.iloc[0].values[-2]
-            elif len(self.object_logger.read()) == 1:
-                Rew = self.object_logger.iloc[0].values[0]
-            else: step_type = 0
-            return Obs, Rew * self.object_multiplier, Done, step_type
+        await self.observation_lock_get.acquire()
+        Obs = self.normalizer(self.observe_logger.read().values)
+        Done = self.train_finish
+        Rew = 0
+        step_type = 2 if Done else 1
+        if len(self.object_logger.read()) > 1:
+            Rew = self.object_logger.iloc[0].values[-1] - self.object_logger.iloc[0].values[-2]
+        elif len(self.object_logger.read()) == 1:
+            Rew = self.object_logger.iloc[0].values[0]
+        else: step_type = 0
+        RET = Obs, Rew * self.object_multiplier, Done, step_type
+        self.observation_lock_set.release()
+        return RET
     async def set_action(self, action):# set이 먼저 발생
         devprint("OPT.set_action", action)
-        async with self.action_lock:
-            assert self.action_lock_turn.locked()
-            self.action_logger.write(action)
-            self.action_lock.release()
+        await self.action_lock_set.acquire()
+        self.action_logger.write(action)
+        self.action_lock_get.release()
     async def get_action(self):
         devprint("OPT.get_action")
-        async with self.get_action:
-            await self.action_lock_turn.acquire()
-            return self.action_logger.read().iloc[-1].values
+        await self.action_lock_get.acquire()
+        RET = self.action_logger.read().iloc[-1].values
+        self.action_lock_set.release()
+        return RET
 
     async def set_hyperparameters(self):
         devprint("OPT.set_hyperparameters")
@@ -108,7 +111,7 @@ class OPT:
         self.object_logger = Logger([self.objective])
         self.train_finish = False
 
-        await self.action_lock.acquire()
+        await self.action_lock_turn.acquire()
     async def epoch_end(self, info):
         devprint("OPT.epoch_end", info)
         await self.set_observation(*info)
