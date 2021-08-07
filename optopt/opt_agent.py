@@ -13,12 +13,12 @@ import tf_agents
 import os
 import reverb
 import tempfile
-from tf_agents.agents.ddpg import critic_network
+from tf_agents.agents.ddpg import critic_network, critic_rnn_network
 from tf_agents.agents.sac import sac_agent
 from tf_agents.agents.sac import tanh_normal_projection_network
 #from tf_agents.environments import suite_pybullet
 from tf_agents.metrics import py_metrics
-from tf_agents.networks import actor_distribution_network
+from tf_agents.networks import actor_distribution_network, actor_distribution_rnn_network
 from tf_agents.policies import greedy_policy
 from tf_agents.policies import py_tf_eager_policy
 from tf_agents.policies import random_py_policy
@@ -38,11 +38,11 @@ tempdir = tempfile.gettempdir()
 # 1e5 is just so this doesn't take too long (1 hr)
 num_iterations = 100000 # @param {type:"integer"}
 
-initial_collect_steps = 10000 # @param {type:"integer"}
+initial_collect_steps = 10 # @param {type:"integer"}
 collect_steps_per_iteration = 1 # @param {type:"integer"}
 replay_buffer_capacity = 10000 # @param {type:"integer"}
 
-batch_size = 256 # @param {type:"integer"}
+batch_size = 1 # @param {type:"integer"}
 
 critic_learning_rate = 3e-4 # @param {type:"number"}
 actor_learning_rate = 3e-4 # @param {type:"number"}
@@ -65,6 +65,7 @@ class async_Agent:
         self.env = environment
 
         collect_env = eval_env = self.env
+        observation_spec, action_spec, time_step_spec = spec_utils.get_tensor_specs(collect_env)
         with strategy.scope():
             """
             optimizer = AdaBeliefOptimizer(learning_rate=0.0003,
@@ -81,7 +82,6 @@ class async_Agent:
                 self.env.action_spec(),
                 num_epochs = 5, 
                 **params)
-            """
             params = {}
             model = tf_agents.networks.Sequential(
                 [tf.keras.layers.LSTM(128, return_sequences=True, return_state=True), 
@@ -95,9 +95,29 @@ class async_Agent:
                  tf.keras.layers.Dense(1)]
             )
             params['critic_network'] = model
+            """
+            params = {}
+            model = actor_distribution_rnn_network.ActorDistributionRnnNetwork(
+                    observation_spec, action_spec,
+                    fc_layer_params=[],
+                    lstm_size = [128, 128],
+                    output_fc_layer_params = [],
+                    activation_fn = tf.keras.activations.relu,
+                    continuous_projection_net=(
+                        tanh_normal_projection_network.TanhNormalProjectionNetwork))
+            params['actor_network'] = model
+            model = critic_rnn_network.CriticRnnNetwork(
+                        (observation_spec, action_spec), observation_conv_layer_params=None,
+                        observation_fc_layer_params=(64,), action_fc_layer_params=(64,),
+                        joint_fc_layer_params=[128], lstm_size=[128], output_fc_layer_params=(64, ),
+                        activation_fn=tf.keras.activations.relu, kernel_initializer=None,
+                        last_kernel_initializer=None, rnn_construction_fn=None,
+                        rnn_construction_kwargs=None, name='CriticRnnNetwork'
+                    )
+
+            params['critic_network'] = model
 
             train_step = train_utils.create_train_step()
-            observation_spec, action_spec, time_step_spec = spec_utils.get_tensor_specs(collect_env)
             self.tf_agent = tf_agent = sac_agent.SacAgent(
                     time_step_spec,
                     action_spec,
@@ -153,6 +173,7 @@ class async_Agent:
                             train_step,
                             steps_per_run=initial_collect_steps,
                             observers=[rb_observer])
+        initial_collect_actor.run()
         env_step_metric = py_metrics.EnvironmentSteps()
         self.collect_actor = collect_actor = actor.Actor(
                             collect_env,
