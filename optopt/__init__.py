@@ -83,19 +83,18 @@ class OPT:
             self.action_logger.write(action)
             self.action_lock.release()
     async def get_action(self):
-        print("OPT.get_action", action)
+        print("OPT.get_action")
         async with self.get_action:
             await self.action_lock_turn.acquire()
             return self.action_logger.read().iloc[-1].values
 
     async def set_hyperparameters(self):
-        print("OPT.set_hyperparameters", action)
+        print("OPT.set_hyperparameters")
         action = await self.get_action()
         self.Variables.set_values(action)
 
     async def train_begin(self):
         print("OPT.train_begin")
-        assert len( self.callback_logger.log ) == 0
         assert self.compiled
 
         self.observe_logger = Logger(self.using_features)
