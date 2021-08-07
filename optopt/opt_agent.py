@@ -99,7 +99,7 @@ class async_Agent:
             params = {}
             model = actor_distribution_rnn_network.ActorDistributionRnnNetwork(
                     observation_spec, action_spec,
-                    fc_layer_params=[],
+                    input_fc_layer_params=[],
                     lstm_size = [128, 128],
                     output_fc_layer_params = [],
                     activation_fn = tf.keras.activations.relu,
