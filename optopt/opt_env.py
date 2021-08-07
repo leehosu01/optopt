@@ -28,29 +28,35 @@ tf.compat.v1.enable_v2_behavior()
 
 class ENV(py_environment.PyEnvironment):
     
-  def __init__(self, manager, action_cnt, feature_cnt):
+  def __init__(self, manager, action_cnt, feature_cnt, window_size = 16):
     self._action_spec = array_spec.BoundedArraySpec(
         shape=(action_cnt, ), dtype=np.float32, minimum=0, maximum=1, name='action')
     self._observation_spec = array_spec.BoundedArraySpec(
-        shape=(None, feature_cnt,), dtype=np.float32, name='observation')
+        shape=(window_size, feature_cnt), dtype=np.float32, name='observation')
     self._state = 0
     self._episode_ended = False
     self.manager = manager
-    
+    self.window_size = window_size
   def action_spec(self):
     return self._action_spec
 
   def observation_spec(self):
     return self._observation_spec
-
+  def crop_or_padding(self, data):
+    crop = data[-self.window_size:]
+    RET = np.zeros(self._observation_spec.shape)
+    RET[-crop.shape[0]:] = crop[:]
+    return RET
   def _reset(self):
     Obs, Rew, self._episode_ended, step_type = asyncio.run(self.manager.get_observation())
+    Obs = self.crop_or_padding(Obs)
     return ts.restart(Obs)
 
   def _step(self, action):
     if self._episode_ended: return self.reset()
     asyncio.run(self.manager.set_action(action))
     Obs, Rew, self._episode_ended, step_type = asyncio.run(self.manager.get_observation())
+    Obs = self.crop_or_padding(Obs)
 
     if self._episode_ended: return ts.termination(Obs, Rew)
     return ts.transition(Obs, Rew, discount = 1 - self._episode_ended)
