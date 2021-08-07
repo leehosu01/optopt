@@ -45,13 +45,13 @@ class ENV(py_environment.PyEnvironment):
     return self._observation_spec
 
   def _reset(self):
-    Obs, Rew, self._episode_ended, discount = asyncio.run(self.manager.get_observation())
+    Obs, Rew, self._episode_ended, step_type = asyncio.run(self.manager.get_observation())
     return ts.restart(Obs)
 
   def _step(self, action):
     if self._episode_ended: return self.reset()
     asyncio.run(self.manager.set_action(action))
-    Obs, Rew, self._episode_ended, discount = asyncio.run(self.manager.get_observation())
+    Obs, Rew, self._episode_ended, step_type = asyncio.run(self.manager.get_observation())
 
     if self._episode_ended: return ts.termination(Obs, Rew)
-    return ts.transition(Obs, Rew, discount = discount)
+    return ts.transition(Obs, Rew, discount = 1 - self._episode_ended)

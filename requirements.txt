@@ -1,4 +1,6 @@
 tensorflow-probability>=0.13.0
-tf-agents>=0.8.0
-tensorflow>=2.4.1
+tf-agents[reverb]
+tensorflow
 pandas
+adabelief-tf>=0.2.0
+numpy
