@@ -103,6 +103,7 @@ class OPT:
 
     async def train_begin(self):
         devprint("OPT.train_begin")
+        assert 0
         assert self.compiled
 
         self.observe_logger = Logger(self.using_features)
