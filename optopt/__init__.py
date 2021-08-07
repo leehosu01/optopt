@@ -99,9 +99,9 @@ class OPT:
         self.Variables.set_values(action)
 
     async def train_begin(self):
+        assert 0
         devprint("OPT.train_begin")
         assert self.compiled
-        assert 0
 
         self.observe_logger = Logger(self.using_features)
         self.action_logger = Logger(self.Variables.get_param_names())
