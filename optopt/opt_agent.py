@@ -167,13 +167,12 @@ class async_Agent:
                             table_name,
                             sequence_length=2,
                             stride_length=1)
-        initial_collect_actor = actor.Actor(
+        self.initial_collect_actor = actor.Actor(
                             collect_env,
                             random_policy,
                             train_step,
                             steps_per_run=initial_collect_steps,
                             observers=[rb_observer])
-        initial_collect_actor.run()
         env_step_metric = py_metrics.EnvironmentSteps()
         self.collect_actor = collect_actor = actor.Actor(
                             collect_env,
@@ -220,6 +219,8 @@ class async_Agent:
         print('step = {0}: {1}'.format(step, eval_results))
 
     async def training_process(self):
+        self.initial_collect_actor.run()
+
         # Reset the train step
         self.tf_agent.train_step_counter.assign(0)
 
