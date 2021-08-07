@@ -97,9 +97,10 @@ class async_Agent:
             params['critic_network'] = model
 
             train_step = train_utils.create_train_step()
+            observation_spec, action_spec, time_step_spec = spec_utils.get_tensor_specs(collect_env)
             self.tf_agent = tf_agent = sac_agent.SacAgent(
-                    self.env.time_step_spec(),
-                    self.env.action_spec(),
+                    time_step_spec,
+                    action_spec,
                     actor_optimizer=tf.compat.v1.train.AdamOptimizer(
                         learning_rate=actor_learning_rate),
                     critic_optimizer=tf.compat.v1.train.AdamOptimizer(
