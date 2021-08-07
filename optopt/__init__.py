@@ -103,8 +103,8 @@ class OPT:
         self.object_logger = Logger([self.objective])
         self.train_finish = False
 
+        assert 0
         await self.action_lock.acquire()
-
     async def epoch_end(self, info):
         devprint("OPT.epoch_end", info)
         await self.set_observation(*info)
