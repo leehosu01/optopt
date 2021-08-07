@@ -42,8 +42,8 @@ class OPT:
         self.action_lock = asyncio.Lock()
 
 
-        self.env = env.ENV(self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
-        self.agent = opt_agent.agent()
+        self.env = opt_agent.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
+        self.agent = opt_agent.agent(self, self.env)
         self.agent.start()
 
 
@@ -64,11 +64,13 @@ class OPT:
             Obs = self.normalizer(self.observe_logger.read().values)
             Done = self.train_finish
             Rew = 0
+            discount = 0.99
             if len(self.object_logger.read()) > 1:
                 Rew = self.object_logger.iloc[0].values[-1] - self.object_logger.iloc[0].values[-2]
-            if len(self.object_logger.read()) == 1:
+            elif len(self.object_logger.read()) == 1:
                 Rew = self.object_logger.iloc[0].values[0]
-            return Obs, Rew * self.object_multiplier, Done
+            else: discount = 1.
+            return Obs, Rew * self.object_multiplier, Done, discount
     async def set_action(self, action):# set이 먼저 발생
         async with self.action_lock:
             assert self.action_lock_turn.locked()
