@@ -228,10 +228,8 @@ class async_Agent:
             loss_info = self.agent_learner.run(iterations=1)
             self.history = loss_info.loss.numpy()
 
-    async def _start(self):
-        asyncio.ensure_future(self.training_process())
     def start(self):
-        asyncio.run(self._start())
+        asyncio.ensure_future(self.training_process())
     def finish(self):
         self.rb_observer.close()
         self.reverb_server.stop()
