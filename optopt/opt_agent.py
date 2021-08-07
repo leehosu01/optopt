@@ -137,6 +137,18 @@ class async_Agent:
 
             tf_agent.initialize()
             
+    def get_eval_metrics(self):
+        self.eval_actor.run()
+        results = {}
+        for metric in self.eval_actor.metrics:
+            results[metric.name] = metric.result()
+        return results
+    def log_eval_metrics(self, step, metrics):
+        eval_results = (', ').join('{} = {:.6f}'.format(name, result) for name, result in metrics.items())
+        print('step = {0}: {1}'.format(step, eval_results))
+
+    async def training_process(self):
+        tf_agent = self.tf_agent
         table_name = 'uniform_table'
         table = reverb.Table(
             table_name,
@@ -208,17 +220,6 @@ class async_Agent:
                 tf_agent,
                 experience_dataset_fn,
                 triggers=learning_triggers)
-    def get_eval_metrics(self):
-        self.eval_actor.run()
-        results = {}
-        for metric in self.eval_actor.metrics:
-            results[metric.name] = metric.result()
-        return results
-    def log_eval_metrics(self, step, metrics):
-        eval_results = (', ').join('{} = {:.6f}'.format(name, result) for name, result in metrics.items())
-        print('step = {0}: {1}'.format(step, eval_results))
-
-    async def training_process(self):
         self.initial_collect_actor.run()
 
         # Reset the train step
