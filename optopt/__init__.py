@@ -42,7 +42,7 @@ class OPT:
 
 
         self.env = opt_env.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
-        self.env = tf_agents.environments.tf_py_environment.TFPyEnvironment(self.env)
+        self.env = tf_agents.environments.py_environment.PyEnvironment(self.env)
         self.agent = opt_agent.async_Agent(self, self.env)
         self.agent.start()
 
