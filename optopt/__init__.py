@@ -51,6 +51,7 @@ class OPT:
 
     def get_callback(self):
         assert self.compiled
+        print("OPT.get_callback")
             
         return simple_callback(self, self.using_features, self.objective)
         
