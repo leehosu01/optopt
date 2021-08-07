@@ -150,6 +150,7 @@ class async_Agent:
         print('step = {0}: {1}'.format(step, eval_results))
 
     async def training_process(self):
+        self.training_process = True
         collect_env = self.env
         tf_agent = self.tf_agent
         train_step = self.train_step
@@ -231,6 +232,7 @@ class async_Agent:
             self.history = loss_info.loss.numpy()
 
     def start(self):
+        self.reach_start = True
         asyncio.ensure_future(self.training_process())
     def finish(self):
         self.rb_observer.close()
