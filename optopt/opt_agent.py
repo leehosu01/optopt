@@ -150,7 +150,7 @@ class async_Agent:
         print('step = {0}: {1}'.format(step, eval_results))
 
     async def training_process(self):
-        self.training_process = True
+        self.reach_training_process = True
         collect_env = self.env
         tf_agent = self.tf_agent
         train_step = self.train_step
@@ -185,6 +185,7 @@ class async_Agent:
                             table_name,
                             sequence_length=2,
                             stride_length=1)
+        self.reach_training_process2 = True
         self.initial_collect_actor = actor.Actor(
                             collect_env,
                             random_policy,
