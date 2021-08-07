@@ -127,7 +127,7 @@ class Variable_definer:
         return self.set_function(name, lambda rate: math.exp( (max_lv - min_lv) * rate + min_lv ))
     def uniform(self, name :str , min_v :float = 0., max_v :float = 1.):
         assert not self.is_frozen
-        assert min < max
+        assert min_v < max_v
         return self.set_function(name, lambda rate: ( (max_v - min_v) * rate + min_v ))
     def custom(self, name, func):
         assert not self.is_frozen
