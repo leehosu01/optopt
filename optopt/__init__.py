@@ -94,6 +94,7 @@ class OPT:
         self.Variables.set_values(action)
 
     async def train_begin(self):
+        print("OPT.train_begin")
         assert len( self.callback_logger.log ) == 0
         assert self.compiled
 
@@ -105,9 +106,11 @@ class OPT:
         await self.action_lock.acquire()
 
     async def epoch_end(self, info):
+        print("OPT.epoch_end", info)
         await self.set_observation(*info)
         await self.set_hyperparameters()
     async def train_end(self):
+        print("OPT.train_end")
         self.normalizer.update(self.object_logger.read().values)
         #self.callback_logs[call_id] 를 지워도 되고 상관 없다.
         pass
