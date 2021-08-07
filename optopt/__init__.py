@@ -4,7 +4,7 @@ import tensorflow as tf
 import warnings
 import random
 import pandas as pd
-from optopt import env
+from optopt import opt_env
 from optopt import opt_agent
  
 devprint = print
@@ -33,11 +33,18 @@ class OPT:
     def compile(self):
         self.compiled = True
         self.Variables.make_frozen()
-
         self.normalizer = Normalizer(self.using_features)
+
+        self.observation_lock_turn = asyncio.Lock()
+        self.action_lock_turn = asyncio.Lock()
+
+        self.observation_lock = asyncio.Lock()
+        self.action_lock = asyncio.Lock()
+
 
         self.env = env.ENV(self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
         self.agent = opt_agent.agent()
+        self.agent.start()
 
 
     def get_callback(self):
@@ -79,12 +86,6 @@ class OPT:
     async def train_begin(self):
         assert len( self.callback_logger.log ) == 0
         assert self.compiled
-
-        self.observation_lock_turn = asyncio.Lock()
-        self.action_lock_turn = asyncio.Lock()
-
-        self.observation_lock = asyncio.Lock()
-        self.action_lock = asyncio.Lock()
 
         self.observe_logger = Logger(self.using_features)
         self.action_logger = Logger(self.Variables.get_param_names())
