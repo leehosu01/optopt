@@ -49,6 +49,10 @@ class OPT:
         self.action_lock_get = asyncio.Lock()
         run_until(self.action_lock_get.acquire())
 
+        self.observe_logger = Logger(self.using_features)
+        self.action_logger = Logger(self.Variables.get_param_names())
+        self.object_logger = Logger([self.objective])
+
 
         self.env = opt_env.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
         #self.env = tf_agents.environments.py_environment.PyEnvironment(self.env)
@@ -112,9 +116,6 @@ class OPT:
         devprint("OPT.train_begin")
         assert self.compiled
 
-        self.observe_logger = Logger(self.using_features)
-        self.action_logger = Logger(self.Variables.get_param_names())
-        self.object_logger = Logger([self.objective])
         self.train_finish = False
     async def epoch_end(self, info):
         devprint("OPT.epoch_end", info)
@@ -123,6 +124,10 @@ class OPT:
     async def train_end(self):
         devprint("OPT.train_end")
         self.normalizer.update(self.object_logger.read().values)
+
+        self.observe_logger = Logger(self.using_features)
+        self.action_logger = Logger(self.Variables.get_param_names())
+        self.object_logger = Logger([self.objective])
         #self.callback_logs[call_id] 를 지워도 되고 상관 없다.
         pass
 
