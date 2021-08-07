@@ -52,7 +52,7 @@ target_update_period = 1 # @param {type:"number"}
 gamma = 0.99 # @param {type:"number"}
 reward_scale_factor = 1.0 # @param {type:"number"}
 
-log_interval = 5000 # @param {type:"integer"}
+log_interval = 1 # @param {type:"integer"}
 
 num_eval_episodes = 20 # @param {type:"integer"}
 eval_interval = 10000 # @param {type:"integer"}
@@ -152,7 +152,6 @@ class async_Agent:
                             train_step,
                             steps_per_run=initial_collect_steps,
                             observers=[rb_observer])
-        initial_collect_actor.run()
         env_step_metric = py_metrics.EnvironmentSteps()
         self.collect_actor = collect_actor = actor.Actor(
                             collect_env,
@@ -222,6 +221,17 @@ class async_Agent:
             if log_interval and step % log_interval == 0:
                 print('step = {0}: loss = {1}'.format(step, loss_info.loss.numpy()))
 
+    async def training_process(self):
+        # Reset the train step
+        self.tf_agent.train_step_counter.assign(0)
+        self.history = []
+
+        for _ in range(num_iterations):
+            # Training.
+            self.collect_actor.run()
+            loss_info = self.agent_learner.run(iterations=1)
+            self.history = loss_info.loss.numpy()
+
     async def _start(self):
         asyncio.ensure_future(self.training_process())
     def start(self):
@@ -229,3 +239,4 @@ class async_Agent:
     def finish(self):
         self.rb_observer.close()
         self.reverb_server.stop()
+    def get_history(self):return list(self.history)
