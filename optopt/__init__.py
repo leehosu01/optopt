@@ -10,10 +10,8 @@ import nest_asyncio
 nest_asyncio.apply()
 def devprint(*args, **kwargs):
     print(*args, **kwargs, flush = True)
-def run_until(X):
-    loop = asyncio.get_event_loop()   
-    loop.run_until_complete(X)    
-    #loop.close()                        
+def run_until(X): un_until.loop.run_until_complete(X)
+run_until.loop = asyncio.get_event_loop()      
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
     """
@@ -113,7 +111,7 @@ class OPT:
         self.Variables.set_values(action)
 
     async def train_begin(self):
-        assert 0
+        #assert 0
         devprint("OPT.train_begin")
         assert self.compiled
 
