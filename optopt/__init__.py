@@ -41,8 +41,8 @@ class OPT:
         self.action_lock = asyncio.Lock()
 
 
-        self.env = optopt.opt_agent.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
-        self.agent = optopt.opt_agent.async_Agent(self, self.env)
+        self.env = opt_env.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
+        self.agent = opt_agent.async_Agent(self, self.env)
         self.agent.start()
 
 
@@ -190,4 +190,5 @@ class Normalizer:
         pass
     def get_param_cnt(self):
         return len(self.parameters)
-import optopt
+from optopt import opt_env
+from optopt import opt_agent
