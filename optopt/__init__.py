@@ -97,13 +97,13 @@ class OPT:
     async def train_begin(self):
         devprint("OPT.train_begin")
         assert self.compiled
+        assert 0
 
         self.observe_logger = Logger(self.using_features)
         self.action_logger = Logger(self.Variables.get_param_names())
         self.object_logger = Logger([self.objective])
         self.train_finish = False
 
-        assert 0
         await self.action_lock.acquire()
     async def epoch_end(self, info):
         devprint("OPT.epoch_end", info)
