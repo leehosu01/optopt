@@ -40,6 +40,10 @@ class OPT:
         self.compiled = True
         self.Variables.make_frozen()
         self.normalizer = Normalizer(self.using_features)
+        
+        self.observe_logger = Logger(self.using_features)
+        self.action_logger = Logger(self.Variables.get_param_names())
+        self.object_logger = Logger([self.objective])
 
         self.observation_lock_set = asyncio.Lock()
         self.observation_lock_get = asyncio.Lock()
@@ -49,9 +53,6 @@ class OPT:
         self.action_lock_get = asyncio.Lock()
         run_until(self.action_lock_get.acquire())
 
-        self.observe_logger = Logger(self.using_features)
-        self.action_logger = Logger(self.Variables.get_param_names())
-        self.object_logger = Logger([self.objective])
 
 
         self.env = opt_env.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
@@ -128,6 +129,14 @@ class OPT:
         self.observe_logger = Logger(self.using_features)
         self.action_logger = Logger(self.Variables.get_param_names())
         self.object_logger = Logger([self.objective])
+
+        self.observation_lock_set = asyncio.Lock()
+        self.observation_lock_get = asyncio.Lock()
+        run_until(self.observation_lock_set.acquire())
+
+        self.action_lock_set = asyncio.Lock()
+        self.action_lock_get = asyncio.Lock()
+        run_until(self.action_lock_get.acquire())
         #self.callback_logs[call_id] 를 지워도 되고 상관 없다.
         pass
 
