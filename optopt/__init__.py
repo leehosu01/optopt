@@ -102,7 +102,6 @@ class OPT:
         self.Variables.set_values(action)
 
     async def train_begin(self):
-        assert 0
         devprint("OPT.train_begin")
         assert self.compiled
 
