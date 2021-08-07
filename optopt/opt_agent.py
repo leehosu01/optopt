@@ -186,6 +186,7 @@ class async_Agent:
                             sequence_length=2,
                             stride_length=1)
         self.reach_training_process2 = True
+        """
         self.initial_collect_actor = actor.Actor(
                             collect_env,
                             random_policy,
@@ -193,6 +194,7 @@ class async_Agent:
                             steps_per_run=initial_collect_steps,
                             observers=[rb_observer])
         self.initial_collect_actor.run()
+        """
 
         env_step_metric = py_metrics.EnvironmentSteps()
         self.collect_actor = collect_actor = actor.Actor(
