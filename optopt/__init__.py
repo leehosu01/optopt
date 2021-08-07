@@ -169,9 +169,11 @@ class simple_callback(tf.keras.callbacks.Callback):
     def on_train_begin(self, logs = None):
         devprint("simple_callback.on_train_begin", logs)
         loop = asyncio.get_event_loop()
+        devprint("simple_callback.on_train_begin 1", logs)
         loop.run_until_complete(self.parent_OPT.train_begin())
+        devprint("simple_callback.on_train_begin 2", logs)
         loop.close()
-        devprint("simple_callback.on_train_begin END", logs)
+        devprint("simple_callback.on_train_begin 3", logs)
     def on_epoch_end(self, epoch, logs=None):
         #epoch = 0 으로 시작한다.
         devprint("simple_callback.on_epoch_end", logs)
