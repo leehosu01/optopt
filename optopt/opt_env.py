@@ -25,7 +25,6 @@ from tf_agents.environments import suite_gym
 from tf_agents.trajectories import time_step as ts
 
 tf.compat.v1.enable_v2_behavior()
-import optopt
 
 class ENV(py_environment.PyEnvironment):
     
@@ -55,3 +54,4 @@ class ENV(py_environment.PyEnvironment):
 
     if self._episode_ended: return ts.termination(Obs, Rew)
     return ts.transition(Obs, Rew, discount = 1 - self._episode_ended)
+import optopt
