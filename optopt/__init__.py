@@ -76,7 +76,7 @@ class OPT:
         self.object_logger.write([obj])
         self.train_finish = done
         self.observation_lock_get.release()
-        assert not oself.bservation_lock_get.locked()
+        assert not self.observation_lock_get.locked()
     async def get_observation(self): # get이 먼저 발생
         devprint("OPT.get_observation")
         assert self.observation_lock_set.locked()
