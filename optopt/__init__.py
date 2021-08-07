@@ -5,7 +5,7 @@ import warnings
 import random
 import pandas as pd
 import numpy as np
-
+import tf_agents
 devprint = print
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
