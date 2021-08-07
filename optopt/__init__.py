@@ -43,11 +43,11 @@ class OPT:
 
         self.observation_lock_set = asyncio.Lock()
         self.observation_lock_get = asyncio.Lock()
-        await self.observation_lock_set.acquire()
+        run_until(self.observation_lock_set.acquire())
 
         self.action_lock_set = asyncio.Lock()
         self.action_lock_get = asyncio.Lock()
-        await self.action_lock_get.acquire()
+        run_until(self.action_lock_get.acquire())
 
 
         self.env = opt_env.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
