@@ -84,14 +84,14 @@ class async_Agent:
             """
             params = {}
             model = tf_agents.networks.Sequential(
-                [tf.keras.layers.LSTM(128, return_sequences=False, return_state=False), 
-                 tf.keras.layers.LSTM(128, return_sequences=False, return_state=False),
+                [tf.keras.layers.LSTM(128, return_sequences=True, return_state=True), 
+                 tf.keras.layers.LSTM(128, return_sequences=True, return_state=True),
                  tf.keras.layers.Dense(self.env.action_spec().shape[-1], activation = 'sigmoid')]
             )
             params['actor_network'] = model
             model = tf_agents.networks.Sequential(
-                [tf.keras.layers.LSTM(128, return_sequences=False, return_state=False), 
-                 tf.keras.layers.LSTM(128, return_sequences=False, return_state=False),
+                [tf.keras.layers.LSTM(128, return_sequences=True, return_state=True), 
+                 tf.keras.layers.LSTM(128, return_sequences=True, return_state=True),
                  tf.keras.layers.Dense(1)]
             )
             params['critic_network'] = model
