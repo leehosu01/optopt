@@ -10,6 +10,10 @@ import nest_asyncio
 nest_asyncio.apply()
 def devprint(*args, **kwargs):
     print(*args, **kwargs, flush = True)
+def run_until(X):
+    loop = asyncio.get_event_loop()   
+    loop.run_until_complete(await X)    
+    loop.close()                        
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
     """
@@ -168,23 +172,17 @@ class simple_callback(tf.keras.callbacks.Callback):
         return tmp, logs[self.objective], (self.epochs == epoch + 1)
     def on_train_begin(self, logs = None):
         devprint("simple_callback.on_train_begin", logs)
-        loop = asyncio.get_event_loop()
         devprint("simple_callback.on_train_begin 1", logs)
-        loop.run_until_complete(self.parent_OPT.train_begin())
+        run_until(self.parent_OPT.train_begin())
         devprint("simple_callback.on_train_begin 2", logs)
-        loop.close()
         devprint("simple_callback.on_train_begin 3", logs)
     def on_epoch_end(self, epoch, logs=None):
         #epoch = 0 으로 시작한다.
         devprint("simple_callback.on_epoch_end", logs)
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.parent_OPT.epoch_end(self.get_info(epoch, logs)))
-        loop.close()
+        run_until(self.parent_OPT.epoch_end(self.get_info(epoch, logs)))
     def on_train_end(self, logs=None):
         devprint("simple_callback.on_train_end", logs)
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.parent_OPT.train_end())
-        loop.close()
+        run_until(self.parent_OPT.train_end())
 
 
 class Logger:
