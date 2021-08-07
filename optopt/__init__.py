@@ -162,20 +162,20 @@ class simple_callback(tf.keras.callbacks.Callback):
         self.epochs = params['epochs']
     def get_info(self, epoch, logs):
         tmp ={'progress':(1 + epoch)/self.epochs}
-        tmp.update({K:logs[K] for K in self.using_features})
+        tmp.update({K:logs[K] for K in self.using_features if K in logs})
         devprint("모든 value는 list형 로그가 아닌 단일 value여야함 ", tmp)
         devprint("적어도 한번은 0 progress 조건을 놔둬는걸로 epoch = ", epoch)
         return tmp, logs[self.objective], (self.epochs == epoch + 1)
     def on_train_begin(self, logs = None):
         devprint("simple_callback.on_train_begin", logs)
-        asyncio.run(self.parent_OPT.train_begin())
+        asyncio.run_until_complete(self.parent_OPT.train_begin())
     def on_epoch_end(self, epoch, logs=None):
         #epoch = 0 으로 시작한다.
         devprint("simple_callback.on_epoch_end", logs)
-        asyncio.run(self.parent_OPT.epoch_end(self.get_info(epoch, logs)))
+        asyncio.run_until_complete(self.parent_OPT.epoch_end(self.get_info(epoch, logs)))
     def on_train_end(self, logs=None):
         devprint("simple_callback.on_train_end", logs)
-        asyncio.run(self.parent_OPT.train_end())
+        asyncio.run_until_complete(self.parent_OPT.train_end())
 
 
 class Logger:
