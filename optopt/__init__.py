@@ -167,11 +167,14 @@ class simple_callback(tf.keras.callbacks.Callback):
         devprint("적어도 한번은 0 progress 조건을 놔둬는걸로 epoch = ", epoch)
         return tmp, logs[self.objective], (self.epochs == epoch + 1)
     def on_train_begin(self, logs = None):
+        devprint("simple_callback.on_train_begin", logs)
         asyncio.run(self.parent_OPT.train_begin())
     def on_epoch_end(self, epoch, logs=None):
         #epoch = 0 으로 시작한다.
+        devprint("simple_callback.on_epoch_end", logs)
         asyncio.run(self.parent_OPT.epoch_end(self.get_info(epoch, logs)))
     def on_train_end(self, logs=None):
+        devprint("simple_callback.on_train_end", logs)
         asyncio.run(self.parent_OPT.train_end())
 
 
