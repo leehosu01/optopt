@@ -14,6 +14,8 @@ import abc
 import tensorflow as tf
 import numpy as np
 import asyncio
+import nest_asyncio
+nest_asyncio.apply()
 
 from tf_agents.environments import py_environment
 from tf_agents.environments import tf_environment

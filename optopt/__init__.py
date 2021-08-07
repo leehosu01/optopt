@@ -6,6 +6,8 @@ import random
 import pandas as pd
 import numpy as np
 import tf_agents
+import nest_asyncio
+nest_asyncio.apply()
 devprint = print
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
