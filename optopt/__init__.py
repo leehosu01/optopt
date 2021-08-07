@@ -12,8 +12,8 @@ def devprint(*args, **kwargs):
     print(*args, **kwargs, flush = True)
 def run_until(X):
     loop = asyncio.get_event_loop()   
-    loop.run_until_complete(await X)    
-    loop.close()                        
+    loop.run_until_complete(X)    
+    #loop.close()                        
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
     """
