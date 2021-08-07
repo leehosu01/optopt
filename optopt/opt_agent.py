@@ -117,7 +117,7 @@ class async_Agent:
 
             params['critic_network'] = model
 
-            train_step = train_utils.create_train_step()
+            train_step = self.train_step = train_utils.create_train_step()
             self.tf_agent = tf_agent = sac_agent.SacAgent(
                     time_step_spec,
                     action_spec,
@@ -148,7 +148,10 @@ class async_Agent:
         print('step = {0}: {1}'.format(step, eval_results))
 
     async def training_process(self):
+        collect_env = self.env
         tf_agent = self.tf_agent
+        train_step = self.train_step
+
         table_name = 'uniform_table'
         table = reverb.Table(
             table_name,
@@ -185,6 +188,8 @@ class async_Agent:
                             train_step,
                             steps_per_run=initial_collect_steps,
                             observers=[rb_observer])
+        self.initial_collect_actor.run()
+
         env_step_metric = py_metrics.EnvironmentSteps()
         self.collect_actor = collect_actor = actor.Actor(
                             collect_env,
@@ -194,14 +199,7 @@ class async_Agent:
                             metrics=actor.collect_metrics(10),
                             summary_dir=os.path.join(tempdir, learner.TRAIN_DIR),
                             observers=[rb_observer, env_step_metric])
-        self.eval_actor = eval_actor = actor.Actor(
-                            eval_env,
-                            eval_policy,
-                            train_step,
-                            episodes_per_run=num_eval_episodes,
-                            metrics=actor.eval_metrics(num_eval_episodes),
-                            summary_dir=os.path.join(tempdir, 'eval'),
-                            )
+                            
         saved_model_dir = os.path.join(tempdir, learner.POLICY_SAVED_MODEL_DIR)
 
         # Triggers to save the agent's policy checkpoints.
@@ -220,32 +218,6 @@ class async_Agent:
                 tf_agent,
                 experience_dataset_fn,
                 triggers=learning_triggers)
-        self.initial_collect_actor.run()
-
-        # Reset the train step
-        self.tf_agent.train_step_counter.assign(0)
-
-        # Evaluate the agent's policy once before training.
-        avg_return = self.get_eval_metrics()["AverageReturn"]
-        self.history = [avg_return]
-
-        for _ in range(num_iterations):
-            # Training.
-            self.collect_actor.run()
-            loss_info = self.agent_learner.run(iterations=1)
-
-            # Evaluating.
-            step = self.agent_learner.train_step_numpy
-
-            if eval_interval and step % eval_interval == 0:
-                metrics = self.get_eval_metrics()
-                self.log_eval_metrics(step, metrics)
-                self.history.append(metrics["AverageReturn"])
-
-            if log_interval and step % log_interval == 0:
-                print('step = {0}: loss = {1}'.format(step, loss_info.loss.numpy()))
-
-    async def training_process(self):
         # Reset the train step
         self.tf_agent.train_step_counter.assign(0)
         self.history = []
