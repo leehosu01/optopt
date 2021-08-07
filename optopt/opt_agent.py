@@ -32,6 +32,8 @@ from tf_agents.train.utils import strategy_utils
 from tf_agents.train.utils import train_utils
 
 tempdir = tempfile.gettempdir()
+def run_until(X): run_until.loop.run_until_complete(X)
+run_until.loop = asyncio.get_event_loop()
 
 
 # Use "num_iterations = 1e6" for better results (2 hrs)

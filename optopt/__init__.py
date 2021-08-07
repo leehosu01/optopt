@@ -11,7 +11,7 @@ nest_asyncio.apply()
 def devprint(*args, **kwargs):
     print(*args, **kwargs, flush = True)
 def run_until(X): run_until.loop.run_until_complete(X)
-run_until.loop = asyncio.get_event_loop()      
+run_until.loop = asyncio.get_event_loop()
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
     """

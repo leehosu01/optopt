@@ -28,6 +28,9 @@ from tf_agents.trajectories import time_step as ts
 
 tf.compat.v1.enable_v2_behavior()
 
+def run_until(X): run_until.loop.run_until_complete(X)
+run_until.loop = asyncio.get_event_loop()
+
 class ENV(py_environment.PyEnvironment):
     
   def __init__(self, manager, action_cnt, feature_cnt, window_size = 16):
@@ -48,7 +51,7 @@ class ENV(py_environment.PyEnvironment):
     return data[-1:]
   def _reset(self):
     print("ENV._reset")
-    Obs, Rew, self._episode_ended, step_type = asyncio.run(self.manager.get_observation())
+    Obs, Rew, self._episode_ended, step_type = run_until(self.manager.get_observation())
     #Obs = self.Observation_post_processing(Obs)
     return ts.restart(Obs)
 
@@ -57,7 +60,7 @@ class ENV(py_environment.PyEnvironment):
     if self._episode_ended: return self.reset()
     action = (action + 1)/2
     asyncio.run(self.manager.set_action(action))
-    Obs, Rew, self._episode_ended, step_type = asyncio.run(self.manager.get_observation())
+    Obs, Rew, self._episode_ended, step_type = run_until(self.manager.get_observation())
     #Obs = self.Observation_post_processing(Obs)
 
     if self._episode_ended: return ts.termination(Obs, Rew)
