@@ -32,7 +32,7 @@ class ENV(py_environment.PyEnvironment):
     self._action_spec = array_spec.BoundedArraySpec(
         shape=(action_cnt, ), dtype=np.float32, minimum=0, maximum=1, name='action')
     self._observation_spec = array_spec.BoundedArraySpec(
-        shape=(feature_cnt, ), dtype=np.float32, name='observation')
+        shape=(None, feature_cnt), dtype=np.float32, name='observation')
     self._state = 0
     self._episode_ended = False
     self.manager = manager
@@ -46,14 +46,14 @@ class ENV(py_environment.PyEnvironment):
     return data[-1]
   def _reset(self):
     Obs, Rew, self._episode_ended, step_type = asyncio.run(self.manager.get_observation())
-    Obs = self.Observation_post_processing(Obs)
+    #Obs = self.Observation_post_processing(Obs)
     return ts.restart(Obs)
 
   def _step(self, action):
     if self._episode_ended: return self.reset()
     asyncio.run(self.manager.set_action(action))
     Obs, Rew, self._episode_ended, step_type = asyncio.run(self.manager.get_observation())
-    Obs = self.Observation_post_processing(Obs)
+    #Obs = self.Observation_post_processing(Obs)
 
     if self._episode_ended: return ts.termination(Obs, Rew)
     return ts.transition(Obs, Rew, discount = 1 - self._episode_ended)
