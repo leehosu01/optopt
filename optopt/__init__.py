@@ -8,7 +8,8 @@ import numpy as np
 import tf_agents
 import nest_asyncio
 nest_asyncio.apply()
-devprint = print
+def devprint(*args, **kwargs):
+    print(*args, **kwargs, flush = True)
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
     """
@@ -51,19 +52,19 @@ class OPT:
 
     def get_callback(self):
         assert self.compiled
-        print("OPT.get_callback")
+        devprint("OPT.get_callback")
             
         return simple_callback(self, self.using_features, self.objective)
         
     async def set_observation(self, obs_info, obj, done):
-        print("OPT.set_observation", obs_info, obj, done)
+        devprint("OPT.set_observation", obs_info, obj, done)
         async with self.observation_lock:
             self.observe_logger.write(obs_info)
             self.object_logger.write([obj])
             self.train_finish = done
             self.observation_lock_turn.release()
     async def get_observation(self): # get이 먼저 발생
-        print("OPT.get_observation")
+        devprint("OPT.get_observation")
         async with self.observation_lock:
             await self.observation_lock_turn.acquire()
             Obs = self.normalizer(self.observe_logger.read().values)
@@ -77,24 +78,24 @@ class OPT:
             else: step_type = 0
             return Obs, Rew * self.object_multiplier, Done, step_type
     async def set_action(self, action):# set이 먼저 발생
-        print("OPT.set_action", action)
+        devprint("OPT.set_action", action)
         async with self.action_lock:
             assert self.action_lock_turn.locked()
             self.action_logger.write(action)
             self.action_lock.release()
     async def get_action(self):
-        print("OPT.get_action")
+        devprint("OPT.get_action")
         async with self.get_action:
             await self.action_lock_turn.acquire()
             return self.action_logger.read().iloc[-1].values
 
     async def set_hyperparameters(self):
-        print("OPT.set_hyperparameters")
+        devprint("OPT.set_hyperparameters")
         action = await self.get_action()
         self.Variables.set_values(action)
 
     async def train_begin(self):
-        print("OPT.train_begin")
+        devprint("OPT.train_begin")
         assert self.compiled
 
         self.observe_logger = Logger(self.using_features)
@@ -105,11 +106,11 @@ class OPT:
         await self.action_lock.acquire()
 
     async def epoch_end(self, info):
-        print("OPT.epoch_end", info)
+        devprint("OPT.epoch_end", info)
         await self.set_observation(*info)
         await self.set_hyperparameters()
     async def train_end(self):
-        print("OPT.train_end")
+        devprint("OPT.train_end")
         self.normalizer.update(self.object_logger.read().values)
         #self.callback_logs[call_id] 를 지워도 되고 상관 없다.
         pass
@@ -195,7 +196,7 @@ class Normalizer:
         self.params_name = params_name
         self.parameters = self.params_name
     def __call__(self, values):
-        print("is shape [0, N] ?", values.shape)
+        devprint("is shape [0, N] ?", values.shape)
         return np.concat([np.zeros([1, self.get_param_cnt()]), values], axis = 0) 
     def update(self, values):
         pass
