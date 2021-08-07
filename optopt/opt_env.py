@@ -28,7 +28,7 @@ tf.compat.v1.enable_v2_behavior()
 
 class ENV(py_environment.PyEnvironment):
     
-  def __init__(self, manager:optopt.OPT, action_cnt, feature_cnt):
+  def __init__(self, manager, action_cnt, feature_cnt):
     self._action_spec = array_spec.BoundedArraySpec(
         shape=(action_cnt, ), dtype=np.float32, minimum=0, maximum=1, name='action')
     self._observation_spec = array_spec.BoundedArraySpec(
