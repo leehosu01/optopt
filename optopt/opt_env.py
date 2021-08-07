@@ -47,11 +47,13 @@ class ENV(py_environment.PyEnvironment):
   def Observation_post_processing(self, data):
     return data[-1:]
   def _reset(self):
+    print("ENV._reset")
     Obs, Rew, self._episode_ended, step_type = asyncio.run(self.manager.get_observation())
     #Obs = self.Observation_post_processing(Obs)
     return ts.restart(Obs)
 
   def _step(self, action):
+    print("ENV._step", action)
     if self._episode_ended: return self.reset()
     action = (action + 1)/2
     asyncio.run(self.manager.set_action(action))
