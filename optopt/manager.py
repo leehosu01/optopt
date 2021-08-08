@@ -6,7 +6,6 @@ import threading
 from queue import Queue
 from typing import List, Dict
 import optopt
-from optopt import agent, env
 do_not_provide_feature_name = ['progress', 'objective']
 class Manager:
     def __init__(self, using_features:List[str],
@@ -160,3 +159,5 @@ class simple_callback(tf.keras.callbacks.Callback):
         #epoch = 0 으로 시작한다.
         obs, obj, done = self.get_info(epoch, logs)
         self.parent_callback.epoch_end(obs, obj, done)
+
+from optopt import agent, env

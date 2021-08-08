@@ -27,7 +27,6 @@ from tf_agents.trajectories import time_step as ts
 tf.compat.v1.enable_v2_behavior()
 
 import optopt
-from optopt import manager
 class Env(py_environment.PyEnvironment):
     
   def __init__(self, manager :manager.Manager, action_cnt, feature_cnt, config : optopt.Config):
@@ -63,3 +62,4 @@ class Env(py_environment.PyEnvironment):
 
     if self._episode_ended: return ts.termination(Obs, Rew)
     return ts.transition(*self.cast(Obs, Rew, 1. - self._episode_ended))
+from optopt import manager
