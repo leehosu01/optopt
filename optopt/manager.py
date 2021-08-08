@@ -51,7 +51,7 @@ class Manager(optopt.Management_class):
         
         self.agent = agent.Agent(self, self.env, config = self.config)
         self.agent.prepare()
-        self.agent.start()
+        self.agent_started = False
 
         self.train_wait_new = True
         self.compiled = True
@@ -95,6 +95,10 @@ class Manager(optopt.Management_class):
         self.train_wait_new = False
         self.last_objective = None
         self.set_observation((np.zeros([self.in_features], dtype = self.config.dtype), 0, False, 0))
+
+        if self.agent_started == False:
+            self.agent_started = True
+            self.agent.start()
         self.set_hyperparameters()
 
     def epoch_end(self, obs_info, obj, done):
