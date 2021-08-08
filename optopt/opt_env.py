@@ -36,10 +36,9 @@ def run_until(X):
     nonlocal RET 
     RET = await X 
   RET = None
-  loop = asyncio.get_event_loop()
-  loop.run_until_complete(capture_return(X))
-  loop.close()
+  run_until.loop.run_until_complete(capture_return(X))
   return RET
+run_until.loop = asyncio.get_event_loop()
 class ENV(py_environment.PyEnvironment):
     
   def __init__(self, manager, action_cnt, feature_cnt, window_size = 16):
