@@ -91,7 +91,7 @@ class OPT:
         Rew = 0
         step_type = 2 if self.train_finish else 1
         if len(self.object_logger.read()) > 1:
-            Rew = self.object_logger.read().iloc[-1].values[0] - self.object_logger.iloc[-2].read().values[0]
+            Rew = self.object_logger.read().iloc[-1].values[0] - self.object_logger.read().iloc[-2].values[0]
         elif len(self.object_logger.read()) == 1:
             Rew = self.object_logger.read().iloc[-1].values[0]
         else: step_type = 0
