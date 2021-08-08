@@ -8,6 +8,7 @@ from typing import List, Dict
 import optopt
 from optopt import env, agent
 do_not_provide_feature_name = ['progress', 'objective']
+def devprint(*args, **kwargs): pass
 class Manager(optopt.Management_class):
     def __init__(self, using_features:List[str],
                         objective : str = 'val_acc',
@@ -61,37 +62,37 @@ class Manager(optopt.Management_class):
     def set_observation(self, infos):#obs_info, rew, done, step_type
         assert len(infos) == 4
         self.set_observation_lock.acquire()
-        print("set_observation1", self.set_observation_lock.locked())
+        devprint("set_observation1", self.set_observation_lock.locked())
         assert self.get_observation_lock.locked()
-        print("set_observation2", self.observation_queue.qsize())
+        devprint("set_observation2", self.observation_queue.qsize())
         self.observation_queue.put(infos)
-        print("set_observation3", self.observation_queue.qsize())
+        devprint("set_observation3", self.observation_queue.qsize())
         self.get_observation_lock.release()
     def get_observation(self):
         self.get_observation_lock.acquire()
-        print("get_observation1", self.set_observation_lock.locked())
+        devprint("get_observation1", self.set_observation_lock.locked())
         assert self.set_observation_lock.locked()
-        print("get_observation2", self.observation_queue.qsize())
+        devprint("get_observation2", self.observation_queue.qsize())
         RET = self.observation_queue.get()
-        print("get_observation3", self.observation_queue.qsize())
+        devprint("get_observation3", self.observation_queue.qsize())
         self.set_observation_lock.release()
         return RET
 
     def set_action(self, action):
         self.set_action_lock.acquire()
-        print("set_action1", self.get_action_lock.locked())
+        devprint("set_action1", self.get_action_lock.locked())
         assert self.get_action_lock.locked()
-        print("set_action2", self.action_queue.qsize())
+        devprint("set_action2", self.action_queue.qsize())
         self.action_queue.put(action)
-        print("set_action3", self.action_queue.qsize())
+        devprint("set_action3", self.action_queue.qsize())
         self.get_action_lock.release()
     def get_action(self):
         self.get_action_lock.acquire()
-        print("get_action1", self.set_action_lock.locked())
+        devprint("get_action1", self.set_action_lock.locked())
         assert self.set_action_lock.locked()
-        print("get_action2", self.action_queue.qsize())
+        devprint("get_action2", self.action_queue.qsize())
         RET = self.action_queue.get()
-        print("get_action3", self.action_queue.qsize())
+        devprint("get_action3", self.action_queue.qsize())
         self.set_action_lock.release()
         return RET
     
