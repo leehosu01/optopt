@@ -33,7 +33,7 @@ class ENV(py_environment.PyEnvironment):
     self._action_spec = array_spec.BoundedArraySpec(
         shape=(action_cnt, ), dtype=np.float32, minimum=-1, maximum=1, name='action')
     self._observation_spec = array_spec.BoundedArraySpec(
-        shape=(feature_cnt, ), dtype=np.float32, name='observation')
+        shape=(1, feature_cnt), dtype=np.float32, name='observation')
     self._state = 0
     self._episode_ended = False
     self.manager = manager
