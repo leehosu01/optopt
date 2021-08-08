@@ -1,7 +1,16 @@
 
 import tempfile
+from tf_agents.environments import py_environment
 
-from optopt import manager, agent, env
+class Management_class:
+    def __init__(self):
+        pass
+class Environment_class(py_environment.PyEnvironment):
+    def __init__(self):
+        pass
+class Agency_class:
+    def __init__(self):
+        pass
 class Config:
     def __init__(self, 
                 initial_collect_steps = 10 ,

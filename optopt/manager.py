@@ -7,7 +7,7 @@ from queue import Queue
 from typing import List, Dict
 import optopt
 do_not_provide_feature_name = ['progress', 'objective']
-class Manager:
+class Manager(optopt.Management_class):
     def __init__(self, using_features:List[str],
                         objective : str = 'val_acc',
                         direction = 'maximize', 

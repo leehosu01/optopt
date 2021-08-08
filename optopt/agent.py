@@ -33,8 +33,8 @@ from tf_agents.train.utils import strategy_utils
 from tf_agents.train.utils import train_utils
 
 import optopt
-class Agent:
-    def __init__(self, manager:optopt.manager.Manager, environment :optopt.env.Env, config :optopt.Config, strategy = strategy_utils.get_strategy(tpu=False, use_gpu=False)):
+class Agent(optopt.Agency_class):
+    def __init__(self, manager:optopt.Management_class, environment :optopt.Environment_class, config :optopt.Config, strategy = strategy_utils.get_strategy(tpu=False, use_gpu=False)):
         self.manager = manager
         self.env = environment
         self.config = config
