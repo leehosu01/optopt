@@ -114,7 +114,7 @@ class OPT:
         devprint("OPT.get_observation RET = ", RET)
         self.observation_lock_set.release()
         #assert not self.observation_lock_set.locked()
-        return *RET
+        return tuple(RET)
     async def set_action(self, action):# set이 먼저 발생
         devprint("OPT.set_action", action)
         await self.action_lock_set.acquire()
