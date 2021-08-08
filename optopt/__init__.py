@@ -233,7 +233,8 @@ class Logger:
         self.log = pd.DataFrame(columns=self.params_name, dtype = 'float32')
     def write(self, values):
         assert len(values) == len(self.params_name)
-        assert type(values) in [list, tuple, dict]
+        assert type(values) in [list, tuple, dict, np.ndarray]
+        if type(values) == np.ndarray: values = values.tolist()
         if type(values) in [list, tuple]: 
             self.log = self.log.append(dict(zip(self.params_name, values)), ignore_index = True)
         if type(values) == dict: 
