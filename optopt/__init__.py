@@ -79,20 +79,20 @@ class OPT:
         
     async def set_observation(self, obs_info, obj, done):
         devprint("OPT.set_observation", obs_info, obj, done)
-        assert self.observation_lock_get.locked()
+        #assert self.observation_lock_get.locked()
         await self.observation_lock_set.acquire()
-        assert self.observation_lock_get.locked()
+        #assert self.observation_lock_get.locked()
         self.observe_logger.write(obs_info)
         self.object_logger.write([obj])
         self.train_finish = done
         self.observation_lock_get.release()
-        assert not self.observation_lock_get.locked()
+        #assert not self.observation_lock_get.locked()
     async def get_observation(self): # get이 먼저 발생
         devprint("OPT.get_observation")
-        assert self.observation_lock_set.locked()
-        assert 0
+        #assert self.observation_lock_set.locked()
+        #assert 0
         await self.observation_lock_get.acquire()
-        assert self.observation_lock_set.locked()
+        #assert self.observation_lock_set.locked()
         Obs = self.normalizer(self.observe_logger.read().values)
         Done = self.train_finish
         Rew = 0
@@ -105,7 +105,7 @@ class OPT:
         RET = Obs, Rew * self.object_multiplier, Done, step_type
         devprint("OPT.get_observation RET = ", RET)
         self.observation_lock_set.release()
-        assert not self.observation_lock_set.locked()
+        #assert not self.observation_lock_set.locked()
         return RET
     async def set_action(self, action):# set이 먼저 발생
         devprint("OPT.set_action", action)
