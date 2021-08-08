@@ -86,7 +86,7 @@ class OPT:
         #assert 0
         self.observation_lock_get.acquire()
         #assert self.observation_lock_set.locked()
-        Obs = self.normalizer(self.observe_logger.read()).iloc[-1].values[-1]
+        Obs = self.normalizer(self.observe_logger.read()).values[-1]
         Done = self.train_finish
         Rew = 0
         step_type = 2 if self.train_finish else 1
