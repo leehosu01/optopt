@@ -168,7 +168,10 @@ class async_Agent:
                             local_server=reverb_server)
         dataset = reverb_replay.as_dataset(
             sample_batch_size=batch_size, num_steps=2).prefetch(50)
-        experience_dataset_fn = lambda: dataset
+        _experience_dataset_fn = lambda: dataset
+        def experience_dataset_fn():
+            print('start training')
+            return _experience_dataset_fn
         tf_eval_policy = tf_agent.policy
         eval_policy = py_tf_eager_policy.PyTFEagerPolicy(
                             tf_eval_policy, use_tf_function=True)
