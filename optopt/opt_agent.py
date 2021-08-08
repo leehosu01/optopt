@@ -232,7 +232,7 @@ class async_Agent:
             # Training.
             self.collect_actor.run()
             loss_info = self.agent_learner.run(iterations=1)
-            self.history = loss_info.loss.numpy()
+            self.history.append(loss_info.loss.numpy())
 
     def start(self):
         self.reach_start = True

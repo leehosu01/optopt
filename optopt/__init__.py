@@ -97,11 +97,11 @@ class OPT:
         self.get_observation1 = True
         Obs = self.normalizer(self.observe_logger.read().values)
         self.get_observation2 = True
-        Done = self.train_finish
+        Done = int(self.train_finish)
         self.get_observation3 = True
         Rew = 0
         self.get_observation4 = True
-        step_type = 2 if Done else 1
+        step_type = 2 if self.train_finish else 1
         self.get_observation5 = True
         if len(self.object_logger.read()) > 1:
             Rew = self.object_logger.read().iloc[-1].values[0] - self.object_logger.iloc[-2].read().values[0]
