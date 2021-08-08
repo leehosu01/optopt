@@ -50,12 +50,11 @@ class Manager(optopt.Management_class):
         self.env = env.Env(self, self.in_features, self.out_features, config = self.config)
         
         self.agent = agent.Agent(self, self.env, config = self.config)
-        self.agent.prepare()
         self.agent_started = False
 
         self.train_wait_new = True
         self.compiled = True
-    def get_callbacks(self):
+    def get_callback(self):
         assert self.compiled
         return simple_callback(self, self.using_features, self.objective)
         return [simple_callback(self, self.using_features, self.objective) for _ in range(self.config.parallel_env_cnt)]
@@ -98,6 +97,7 @@ class Manager(optopt.Management_class):
 
         if self.agent_started == False:
             self.agent_started = True
+            self.agent.prepare()
             self.agent.start()
         self.set_hyperparameters()
 
