@@ -6,6 +6,7 @@ import threading
 from queue import Queue
 from typing import List, Dict
 import optopt
+from optopt import env, agent
 do_not_provide_feature_name = ['progress', 'objective']
 class Manager(optopt.Management_class):
     def __init__(self, using_features:List[str],
@@ -46,9 +47,9 @@ class Manager(optopt.Management_class):
         self.in_features = len(self.using_features)
         self.out_features = self.Variables.get_param_cnt()
 
-        self.env = optopt.env.Env(self, self.in_features, self.out_features, config = self.config)
+        self.env = env.Env(self, self.in_features, self.out_features, config = self.config)
         
-        self.agent = optopt.agent.Agent(self, self.env, config = self.config)
+        self.agent = agent.Agent(self, self.env, config = self.config)
         self.agent.prepare()
         self.agent.start()
 
