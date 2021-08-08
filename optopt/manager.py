@@ -108,7 +108,8 @@ class Manager(optopt.Management_class):
         Rew = obj if self.last_objective is None else (obj - self.last_objective)
         step_type = 2 if done else 1
         self.last_objective = obj
-        self.set_observation((np.asarray(obs_info, dtype = self.config.dtype), Rew, done, step_type))
+        obs = list(zip(*sorted(obs_info.items())))[1]
+        self.set_observation((np.asarray(obs, dtype = self.config.dtype), Rew, done, step_type))
         if done: self.train_wait_new = True 
 
 
