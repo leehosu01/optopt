@@ -226,7 +226,7 @@ class Normalizer:
         self.parameters = self.params_name
     def __call__(self, values):
         devprint("is shape [0, N] ?", values.shape)
-        return np.concat([np.zeros([1, self.get_param_cnt()]), values], axis = 0) 
+        return np.concatenate([np.zeros([1, self.get_param_cnt()]), values], axis = 0) 
     def update(self, values):
         pass
     def get_param_cnt(self):
