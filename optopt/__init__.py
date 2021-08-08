@@ -48,9 +48,9 @@ class OPT:
 
         self.observation_lock_set = asyncio.Lock()
         self.observation_lock_get = asyncio.Lock()
-        devprint("OPT.compile observation_lock_set lock start")
+        devprint("OPT.compile observation_lock_set lock start", self.observation_lock_set)
         run_until(self.observation_lock_set.acquire())
-        devprint("OPT.compile observation_lock_set lock end")
+        devprint("OPT.compile observation_lock_set lock end", self.observation_lock_set)
 
         self.action_lock_set = asyncio.Lock()
         self.action_lock_get = asyncio.Lock()
