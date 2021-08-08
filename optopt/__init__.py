@@ -17,6 +17,14 @@ def run_until(X):
     loop.set_debug(True)
     loop.run_until_complete(X)
     loop.close()
+def run_until(X):
+    async def capture_return(X):
+        nonlocal RET 
+        RET = await X 
+    RET = None
+    run_until.loop.run_until_complete(capture_return(X))
+    return RET
+run_until.loop = asyncio.get_event_loop()
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
     """
