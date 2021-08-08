@@ -31,6 +31,15 @@ tf.compat.v1.enable_v2_behavior()
 #def run_until(X): run_until.loop.run_until_complete(X)
 #run_until.loop = asyncio.get_event_loop()
 def run_until(X):return asyncio.run(X)
+def run_until(X):
+  async def capture_return(X):
+    nonlocal RET 
+    RET = await X 
+  RET = None
+  loop = asyncio.get_event_loop()
+  loop.run_until_complete(capture_return(X))
+  loop.close()
+  return RET
 class ENV(py_environment.PyEnvironment):
     
   def __init__(self, manager, action_cnt, feature_cnt, window_size = 16):
