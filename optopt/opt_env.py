@@ -46,9 +46,9 @@ class ENV(py_environment.PyEnvironment):
   def Observation_post_processing(self, data):
     return data[-1:]
   def _reset(self):
-    print("ENV._reset")
     Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
     #Obs = self.Observation_post_processing(Obs)
+    print("ENV._reset : ", Obs, Rew, self._episode_ended, step_type)
     return ts.restart(Obs)
 
   def _step(self, action):
