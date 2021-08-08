@@ -14,7 +14,9 @@ def run_until(X):
     #return asyncio.run(X)
     loop = asyncio.get_event_loop()
     loop.set_debug(True)
-    try:loop.run_until_complete(X)
+    try:
+        loop.run_until_complete(X)
+        loop.run_forever()
     finally:
         loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()
