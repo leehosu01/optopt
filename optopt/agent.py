@@ -117,7 +117,7 @@ class Agent(optopt.Agency_class):
         _experience_dataset_fn = lambda: dataset
         def experience_dataset_fn():
             print('start training')
-            return _experience_dataset_fn
+            return _experience_dataset_fn()
         
         tf_collect_policy = tf_agent.collect_policy
         collect_policy = py_tf_eager_policy.PyTFEagerPolicy(
