@@ -60,8 +60,9 @@ class ENV(py_environment.PyEnvironment):
     self.manager.set_action(action)
     print("ENV <= return set_action")
     Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
+    self._episode_ended = bool(self._episode_ended > 0.5)
     #Obs = self.Observation_post_processing(Obs)
 
     if self._episode_ended: return ts.termination(Obs, Rew)
-    return ts.transition(Obs, Rew, discount = 1 - self._episode_ended)
+    return ts.transition(Obs, Rew, discount = np.asarray(1. - self._episode_ended, 'float32'))
 import optopt

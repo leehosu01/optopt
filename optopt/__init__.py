@@ -125,10 +125,11 @@ class OPT:
 
         self.train_finish = False
         self.set_hyperparameters()
-    def epoch_end(self, info):
-        devprint("OPT.epoch_end", info)
-        self.set_observation(*info)
-        self.set_hyperparameters()
+    def epoch_end(self, obs_info, obj, done):
+        devprint("OPT.epoch_end", obs_info, obj, done)
+        self.set_observation(obs_info, obj, done)
+        if done:self.train_end()
+        else: self.set_hyperparameters()
     def train_end(self):
         devprint("OPT.train_end")
         self.normalizer.update(self.object_logger.read().values)
@@ -207,10 +208,12 @@ class simple_callback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         #epoch = 0 으로 시작한다.
         devprint("simple_callback.on_epoch_end", logs)
-        self.parent_OPT.epoch_end(self.get_info(epoch, logs))
+        self.parent_OPT.epoch_end(*self.get_info(epoch, logs))
+    """
     def on_train_end(self, logs=None):
         devprint("simple_callback.on_train_end", logs)
         self.parent_OPT.train_end()
+    """
 
 
 class Logger:
