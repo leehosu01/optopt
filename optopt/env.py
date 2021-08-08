@@ -29,7 +29,7 @@ tf.compat.v1.enable_v2_behavior()
 import optopt
 class Env(optopt.Environment_class):
     
-  def __init__(self, manager :optopt.Management_class, action_cnt, feature_cnt, config : optopt.Config):
+  def __init__(self, manager :optopt.Management_class, feature_cnt, action_cnt, config : optopt.Config):
     self._action_spec = array_spec.BoundedArraySpec(
         shape=(action_cnt, ), dtype=np.float32, minimum=-1, maximum=1, name='action')
     self._observation_spec = array_spec.BoundedArraySpec(
