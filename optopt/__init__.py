@@ -11,6 +11,7 @@ nest_asyncio.apply()
 def devprint(*args, **kwargs):
     print(*args, **kwargs, flush = True)
 def run_until(X):
+    return asyncio.run(X)
     loop = asyncio.get_event_loop()
     try:loop.run_until_complete(X)
     finally:
