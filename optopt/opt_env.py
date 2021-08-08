@@ -39,6 +39,7 @@ def run_until(X):
   run_until.loop.run_until_complete(capture_return(X))
   return RET
 run_until.loop = asyncio.get_event_loop()
+def run_until(X):return X
 class ENV(py_environment.PyEnvironment):
     
   def __init__(self, manager, action_cnt, feature_cnt, window_size = 16):
