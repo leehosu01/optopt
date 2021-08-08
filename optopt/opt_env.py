@@ -59,7 +59,9 @@ class ENV(py_environment.PyEnvironment):
     print("ENV._step", action)
     if self._episode_ended: return self.reset()
     action = (action + 1)/2
-    asyncio.run(self.manager.set_action(action))
+    print("ENV => call set_action", action)
+    run_until(self.manager.set_action(action))
+    print("ENV <= return set_action")
     Obs, Rew, self._episode_ended, step_type = run_until(self.manager.get_observation())
     #Obs = self.Observation_post_processing(Obs)
 
