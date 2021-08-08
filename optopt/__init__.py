@@ -15,7 +15,6 @@ def run_until(X):
     loop = asyncio.get_event_loop()
     loop.set_debug(True)
     loop.run_until_complete(X)
-    loop.run_forever()
     loop.close()
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
