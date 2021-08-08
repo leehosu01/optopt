@@ -50,11 +50,7 @@ class Manager(optopt.Management_class):
         self.env = env.Env(self, self.in_features, self.out_features, config = self.config)
         
         self.agent = agent.Agent(self, self.env, config = self.config)
-        def agent_processing(agent):
-            agent.prepare()
-            agent.start()
-        self.agent_thread = threading.Thread(target = agent_processing, args = (self.agent, ))
-        self.agent_thread.start()
+        self.agent_started = False
 
         self.train_wait_new = True
         self.compiled = True
@@ -98,6 +94,13 @@ class Manager(optopt.Management_class):
         self.train_wait_new = False
         self.last_objective = None
         self.set_observation((np.zeros([self.in_features], dtype = self.config.dtype), 0, False, 0))
+        if not self.agent_started:
+            self.agent_started = True
+            def agent_processing(agent):
+                agent.prepare()
+                agent.start()
+            self.agent_thread = threading.Thread(target = agent_processing, args = (self.agent, ))
+            self.agent_thread.start()
         self.set_hyperparameters()
 
     def epoch_end(self, obs_info, obj, done):
