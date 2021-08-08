@@ -38,6 +38,8 @@ class Env(optopt.Environment_class):
     self._episode_ended = False
     self.manager = manager
     self.config = config
+    self.reseted = False
+    self.last_output = None
   def action_spec(self):
     return self._action_spec
 
@@ -46,13 +48,16 @@ class Env(optopt.Environment_class):
   def cast(self, *args):
     return [np.asarray(I, dtype = self.config.dtype) for I in args]
   def _reset(self):
-    Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
-    print("ENV._reset : ", Obs, Rew, self._episode_ended, step_type)
-    return ts.restart(*self.cast(Obs))
-
+    if not self.reseted: 
+      Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
+      print("ENV._reset : ", Obs, Rew, self._episode_ended, step_type)
+      self.last_output = ts.restart(*self.cast(Obs))
+    self.reseted = True
+    return self.last_output
   def _step(self, action):
     print("ENV._step", action)
     if self._episode_ended: return self.reset()
+    self.reseted = False
     action = (action + 1)/2
     print("ENV => call set_action", action)
     self.recive_action = action##
@@ -60,5 +65,6 @@ class Env(optopt.Environment_class):
     print("ENV <= return set_action")
     Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
 
-    if self._episode_ended: return ts.termination(Obs, Rew)
-    return ts.transition(*self.cast(Obs, Rew, 1. - self._episode_ended))
+    if self._episode_ended: self.last_output = ts.termination(Obs, Rew)
+    else: self.last_output = ts.transition(*self.cast(Obs, Rew, 1. - self._episode_ended))
+    return self.last_output

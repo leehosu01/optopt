@@ -13,8 +13,6 @@ class Agency_class:
         pass
 class Config:
     def __init__(self, 
-                initial_collect_steps = 10 ,
-                collect_steps_per_iteration = 1,
                 replay_buffer_capacity = 1000,
                 sequence_length = 5,
                 train_batch_size = 1,
@@ -31,9 +29,7 @@ class Config:
                 savedir = tempfile.gettempdir(),
                 dtype = 'float32',
                 verbose = 0):
-        assert parallel_env_cnt == None# still not implemented!!
-        self.initial_collect_steps = initial_collect_steps 
-        self.collect_steps_per_iteration = collect_steps_per_iteration
+        assert parallel_env_cnt == None# still not implemented!
         self.replay_buffer_capacity = replay_buffer_capacity
         self.sequence_length = sequence_length
         self.train_batch_size = train_batch_size
