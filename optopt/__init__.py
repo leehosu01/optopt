@@ -9,6 +9,8 @@ import numpy as np
 import tf_agents
 import nest_asyncio
 nest_asyncio.apply()
+import threading
+
 def devprint(*args, **kwargs):
     print(*args, **kwargs, flush = True)
 def run_until(X):
@@ -24,6 +26,7 @@ def run_until(X):
     RET = None
     run_until.loop.run_until_complete(capture_return(X))
     return RET
+
 run_until.loop = asyncio.get_event_loop()
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
@@ -59,15 +62,15 @@ class OPT:
         self.action_logger = Logger(self.Variables.get_param_names())
         self.object_logger = Logger([self.objective])
 
-        self.observation_lock_set = asyncio.Lock()
-        self.observation_lock_get = asyncio.Lock()
+        self.observation_lock_set = threading.Lock()
+        self.observation_lock_get = threading.Lock()
         devprint("OPT.compile observation_lock_set lock start", self.observation_lock_set)
-        await self.observation_lock_set.acquire()
+        self.observation_lock_set.acquire()
         devprint("OPT.compile observation_lock_set lock end", self.observation_lock_set)
 
-        self.action_lock_set = asyncio.Lock()
-        self.action_lock_get = asyncio.Lock()
-        await self.action_lock_get.acquire()
+        self.action_lock_set = threading.Lock()
+        self.action_lock_get = threading.Lock()
+        self.action_lock_get.acquire()
 
         self.train_finish = False
 
@@ -88,18 +91,18 @@ class OPT:
     async def set_observation(self, obs_info, obj, done):
         devprint("OPT.set_observation", obs_info, obj, done)
         #assert self.observation_lock_get.locked()
-        await self.observation_lock_set.acquire()
+        self.observation_lock_set.acquire()
         #assert self.observation_lock_get.locked()
         self.observe_logger.write(obs_info)
         self.object_logger.write([obj])
         self.train_finish = done
         self.observation_lock_get.release()
         #assert not self.observation_lock_get.locked()
-    async def get_observation(self): # get이 먼저 발생
+    def get_observation(self): # get이 먼저 발생
         devprint("OPT.get_observation")
         #assert self.observation_lock_set.locked()
         #assert 0
-        await self.observation_lock_get.acquire()
+        self.observation_lock_get.acquire()
         #assert self.observation_lock_set.locked()
         self.get_observation1 = True
         Obs = self.normalizer(self.observe_logger.read().values)
@@ -121,14 +124,14 @@ class OPT:
         self.observation_lock_set.release()
         #assert not self.observation_lock_set.locked()
         return tuple(RET)
-    async def set_action(self, action):# set이 먼저 발생
+    def set_action(self, action):# set이 먼저 발생
         devprint("OPT.set_action", action)
-        await self.action_lock_set.acquire()
+        self.action_lock_set.acquire()
         self.action_logger.write(action)
         self.action_lock_get.release()
     async def get_action(self):
         devprint("OPT.get_action")
-        await self.action_lock_get.acquire()
+        self.action_lock_get.acquire()
         RET = self.action_logger.read().iloc[-1].values
         self.action_lock_set.release()
         return RET
