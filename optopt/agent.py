@@ -34,7 +34,7 @@ from tf_agents.train.utils import train_utils
 
 import optopt
 class Agent:
-    def __init__(self, manager:manager.Manager, environment :env.Env, config :optopt.Config, strategy = strategy_utils.get_strategy(tpu=False, use_gpu=False)):
+    def __init__(self, manager:optopt.manager.Manager, environment :optopt.env.Env, config :optopt.Config, strategy = strategy_utils.get_strategy(tpu=False, use_gpu=False)):
         self.manager = manager
         self.env = environment
         self.config = config
@@ -193,4 +193,3 @@ class Agent:
         self.rb_observer.close()
         self.reverb_server.stop()
     def get_history(self):return list(self.history)
-from optopt import manager, env

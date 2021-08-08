@@ -29,7 +29,7 @@ tf.compat.v1.enable_v2_behavior()
 import optopt
 class Env(py_environment.PyEnvironment):
     
-  def __init__(self, manager :manager.Manager, action_cnt, feature_cnt, config : optopt.Config):
+  def __init__(self, manager :optopt.manager.Manager, action_cnt, feature_cnt, config : optopt.Config):
     self._action_spec = array_spec.BoundedArraySpec(
         shape=(action_cnt, ), dtype=np.float32, minimum=-1, maximum=1, name='action')
     self._observation_spec = array_spec.BoundedArraySpec(
@@ -62,4 +62,3 @@ class Env(py_environment.PyEnvironment):
 
     if self._episode_ended: return ts.termination(Obs, Rew)
     return ts.transition(*self.cast(Obs, Rew, 1. - self._episode_ended))
-from optopt import manager

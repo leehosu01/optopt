@@ -46,9 +46,9 @@ class Manager:
         self.in_features = len(self.using_features)
         self.out_features = self.Variables.get_param_cnt()
 
-        self.env = env.Env(self, self.in_features, self.out_features, config = self.config)
+        self.env = optopt.env.Env(self, self.in_features, self.out_features, config = self.config)
         
-        self.agent = agent.Agent(self, self.env, config = self.config)
+        self.agent = optopt.agent.Agent(self, self.env, config = self.config)
         self.agent.prepare()
         self.agent.start()
 
@@ -159,5 +159,3 @@ class simple_callback(tf.keras.callbacks.Callback):
         #epoch = 0 으로 시작한다.
         obs, obj, done = self.get_info(epoch, logs)
         self.parent_callback.epoch_end(obs, obj, done)
-
-from optopt import agent, env
