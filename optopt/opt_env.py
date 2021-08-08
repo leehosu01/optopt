@@ -13,9 +13,6 @@ from __future__ import print_function
 import abc
 import tensorflow as tf
 import numpy as np
-import asyncio
-import nest_asyncio
-nest_asyncio.apply()
 
 from tf_agents.environments import py_environment
 from tf_agents.environments import tf_environment
@@ -30,16 +27,6 @@ tf.compat.v1.enable_v2_behavior()
 
 #def run_until(X): run_until.loop.run_until_complete(X)
 #run_until.loop = asyncio.get_event_loop()
-def run_until(X):return asyncio.run(X)
-def run_until(X):
-  async def capture_return(X):
-    nonlocal RET 
-    RET = await X 
-  RET = None
-  run_until.loop.run_until_complete(capture_return(X))
-  return RET
-run_until.loop = asyncio.get_event_loop()
-def run_until(X):return X
 class ENV(py_environment.PyEnvironment):
     
   def __init__(self, manager, action_cnt, feature_cnt, window_size = 16):
@@ -60,7 +47,7 @@ class ENV(py_environment.PyEnvironment):
     return data[-1:]
   def _reset(self):
     print("ENV._reset")
-    Obs, Rew, self._episode_ended, step_type = run_until(self.manager.get_observation())
+    Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
     #Obs = self.Observation_post_processing(Obs)
     return ts.restart(Obs)
 
@@ -70,9 +57,9 @@ class ENV(py_environment.PyEnvironment):
     action = (action + 1)/2
     print("ENV => call set_action", action)
     self.recive_action = action##
-    run_until(self.manager.set_action(action))
+    self.manager.set_action(action)
     print("ENV <= return set_action")
-    Obs, Rew, self._episode_ended, step_type = run_until(self.manager.get_observation())
+    Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
     #Obs = self.Observation_post_processing(Obs)
 
     if self._episode_ended: return ts.termination(Obs, Rew)

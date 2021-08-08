@@ -1,4 +1,4 @@
-import asyncio
+
 import math
 from numpy.core.defchararray import asarray 
 import tensorflow as tf
@@ -7,27 +7,11 @@ import random
 import pandas as pd
 import numpy as np
 import tf_agents
-import nest_asyncio
-nest_asyncio.apply()
 import threading
 
 def devprint(*args, **kwargs):
     print(*args, **kwargs, flush = True)
-def run_until(X):
-    return asyncio.run(X)
-    loop = asyncio.get_event_loop()
-    loop.set_debug(True)
-    loop.run_until_complete(X)
-    loop.close()
-def run_until(X):
-    async def capture_return(X):
-        nonlocal RET 
-        RET = await X 
-    RET = None
-    run_until.loop.run_until_complete(capture_return(X))
-    return RET
 
-run_until.loop = asyncio.get_event_loop()
 do_not_provide_feature_name = ['progress', 'objective']
 class OPT:
     """
@@ -50,7 +34,7 @@ class OPT:
 
         self.compiled = False
 
-    async def compile(self):
+    def compile(self):
         devprint("OPT.compile start")
         self.compiled = True
 
@@ -64,9 +48,7 @@ class OPT:
 
         self.observation_lock_set = threading.Lock()
         self.observation_lock_get = threading.Lock()
-        devprint("OPT.compile observation_lock_set lock start", self.observation_lock_set)
         self.observation_lock_set.acquire()
-        devprint("OPT.compile observation_lock_set lock end", self.observation_lock_set)
 
         self.action_lock_set = threading.Lock()
         self.action_lock_get = threading.Lock()
@@ -79,7 +61,7 @@ class OPT:
         #self.env = tf_agents.environments.py_environment.PyEnvironment(self.env)
         devprint("OPT.compile agent init start")
         self.agent = opt_agent.async_Agent(self, self.env)
-        #self.agent.prepare()
+        self.agent.prepare()
 
 
     def get_callback(self):
@@ -88,7 +70,7 @@ class OPT:
             
         return simple_callback(self, self.using_features, self.objective)
         
-    async def set_observation(self, obs_info, obj, done):
+    def set_observation(self, obs_info, obj, done):
         devprint("OPT.set_observation", obs_info, obj, done)
         #assert self.observation_lock_get.locked()
         self.observation_lock_set.acquire()
@@ -104,15 +86,10 @@ class OPT:
         #assert 0
         self.observation_lock_get.acquire()
         #assert self.observation_lock_set.locked()
-        self.get_observation1 = True
         Obs = self.normalizer(self.observe_logger.read().values)
-        self.get_observation2 = True
         Done = self.train_finish
-        self.get_observation3 = True
         Rew = 0
-        self.get_observation4 = True
         step_type = 2 if self.train_finish else 1
-        self.get_observation5 = True
         if len(self.object_logger.read()) > 1:
             Rew = self.object_logger.read().iloc[-1].values[0] - self.object_logger.iloc[-2].read().values[0]
         elif len(self.object_logger.read()) == 1:
@@ -129,30 +106,30 @@ class OPT:
         self.action_lock_set.acquire()
         self.action_logger.write(action)
         self.action_lock_get.release()
-    async def get_action(self):
+    def get_action(self):
         devprint("OPT.get_action")
         self.action_lock_get.acquire()
         RET = self.action_logger.read().iloc[-1].values
         self.action_lock_set.release()
         return RET
 
-    async def set_hyperparameters(self):
+    def set_hyperparameters(self):
         devprint("OPT.set_hyperparameters")
-        action = await self.get_action()
+        action = self.get_action()
         self.Variables.set_values(action)
 
-    async def train_begin(self):
+    def train_begin(self):
         #assert 0
         devprint("OPT.train_begin")
         assert self.compiled
 
         self.train_finish = False
-        await self.set_hyperparameters()
-    async def epoch_end(self, info):
+        self.set_hyperparameters()
+    def epoch_end(self, info):
         devprint("OPT.epoch_end", info)
-        await self.set_observation(*info)
-        await self.set_hyperparameters()
-    async def train_end(self):
+        self.set_observation(*info)
+        self.set_hyperparameters()
+    def train_end(self):
         devprint("OPT.train_end")
         self.normalizer.update(self.object_logger.read().values)
 
@@ -160,13 +137,13 @@ class OPT:
         self.action_logger = Logger(self.Variables.get_param_names())
         self.object_logger = Logger([self.objective])
 
-        self.observation_lock_set = asyncio.Lock()
-        self.observation_lock_get = asyncio.Lock()
-        await self.observation_lock_set.acquire()
+        self.observation_lock_set = threading.Lock()
+        self.observation_lock_get = threading.Lock()
+        self.observation_lock_set.acquire()
 
-        self.action_lock_set = asyncio.Lock()
-        self.action_lock_get = asyncio.Lock()
-        await self.action_lock_get.acquire()
+        self.action_lock_set = threading.Lock()
+        self.action_lock_get = threading.Lock()
+        self.action_lock_get.acquire()
         #self.callback_logs[call_id] 를 지워도 되고 상관 없다.
         pass
 
@@ -224,16 +201,16 @@ class simple_callback(tf.keras.callbacks.Callback):
     def on_train_begin(self, logs = None):
         devprint("simple_callback.on_train_begin", logs)
         devprint("simple_callback.on_train_begin 1", logs)
-        run_until(self.parent_OPT.train_begin())
+        self.parent_OPT.train_begin()
         devprint("simple_callback.on_train_begin 2", logs)
         devprint("simple_callback.on_train_begin 3", logs)
     def on_epoch_end(self, epoch, logs=None):
         #epoch = 0 으로 시작한다.
         devprint("simple_callback.on_epoch_end", logs)
-        run_until(self.parent_OPT.epoch_end(self.get_info(epoch, logs)))
+        self.parent_OPT.epoch_end(self.get_info(epoch, logs))
     def on_train_end(self, logs=None):
         devprint("simple_callback.on_train_end", logs)
-        run_until(self.parent_OPT.train_end())
+        self.parent_OPT.train_end()
 
 
 class Logger:

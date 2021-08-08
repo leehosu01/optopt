@@ -5,8 +5,8 @@ Created on Fri Aug  7 13:37:10 2021
 
 @author: map
 """
+import threading
 import tensorflow as tf
-import asyncio
 from adabelief_tf import AdaBeliefOptimizer
 
 import tf_agents
@@ -229,15 +229,19 @@ class async_Agent:
         print("async_Agent prepare :5")
         self.history = []
         self.finish_prepare = True
-    def start(self):
-        assert self.reach_prepare
-        assert self.finish_prepare
+    def _start(self):
         self.reach_start = True
         for _ in range(num_iterations):
             # Training.
             self.collect_actor.run()
             loss_info = self.agent_learner.run(iterations=1)
             self.history.append(loss_info.loss.numpy())
+    def start(self):
+        assert self.reach_prepare
+        assert self.finish_prepare
+        thread = threading.Thread(target=self._start)
+        thread.start()
+        return thread
     def finish(self):
         self.rb_observer.close()
         self.reverb_server.stop()
