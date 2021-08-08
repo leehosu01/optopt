@@ -61,8 +61,11 @@ class Manager(optopt.Management_class):
     def set_observation(self, infos):#obs_info, rew, done, step_type
         assert len(infos) == 4
         self.set_observation_lock.acquire()
+        print("set_observation1", self.set_observation_lock.locked())
         assert self.get_observation_lock.locked()
+        print("set_observation2", self.observation_queue.qsize())
         self.observation_queue.put(infos)
+        print("set_observation3", self.observation_queue.qsize())
         self.get_observation_lock.release()
     def get_observation(self):
         self.get_observation_lock.acquire()
@@ -84,8 +87,11 @@ class Manager(optopt.Management_class):
         self.get_action_lock.release()
     def get_action(self):
         self.get_action_lock.acquire()
+        print("get_action1", self.set_action_lock.locked())
         assert self.set_action_lock.locked()
+        print("get_action2", self.action_queue.qsize())
         RET = self.action_queue.get()
+        print("get_action3", self.action_queue.qsize())
         self.set_action_lock.release()
         return RET
     
