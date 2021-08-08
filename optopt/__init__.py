@@ -68,6 +68,7 @@ class OPT:
         #self.env = tf_agents.environments.py_environment.PyEnvironment(self.env)
         devprint("OPT.compile agent init start")
         self.agent = opt_agent.async_Agent(self, self.env)
+        self.agent.prepare()
 
 
     def get_callback(self):

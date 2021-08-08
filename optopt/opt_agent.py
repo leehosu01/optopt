@@ -149,8 +149,8 @@ class async_Agent:
         eval_results = (', ').join('{} = {:.6f}'.format(name, result) for name, result in metrics.items())
         print('step = {0}: {1}'.format(step, eval_results))
 
-    def training_process(self):
-        self.reach_training_process = True
+    def prepare(self):
+        self.reach_prepare = True
         collect_env = self.env
         tf_agent = self.tf_agent
         train_step = self.train_step
@@ -227,7 +227,11 @@ class async_Agent:
         # Reset the train step
         self.tf_agent.train_step_counter.assign(0)
         self.history = []
-
+        self.finish_prepare = True
+    def start(self):
+        assert self.reach_prepare
+        assert self.finish_prepare
+        self.reach_start = True
         for _ in range(num_iterations):
             # Training.
             self.collect_actor.run()
