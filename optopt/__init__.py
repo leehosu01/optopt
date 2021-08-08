@@ -92,6 +92,7 @@ class OPT:
         assert self.observation_lock_set.locked()
         await self.observation_lock_get.acquire()
         assert self.observation_lock_set.locked()
+        assert 0
         Obs = self.normalizer(self.observe_logger.read().values)
         Done = self.train_finish
         Rew = 0
