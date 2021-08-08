@@ -1,5 +1,6 @@
 import asyncio
-import math 
+import math
+from numpy.core.defchararray import asarray 
 import tensorflow as tf
 import warnings
 import random
@@ -97,7 +98,7 @@ class OPT:
         self.get_observation1 = True
         Obs = self.normalizer(self.observe_logger.read().values)
         self.get_observation2 = True
-        Done = int(self.train_finish)
+        Done = self.train_finish
         self.get_observation3 = True
         Rew = 0
         self.get_observation4 = True
@@ -108,11 +109,12 @@ class OPT:
         elif len(self.object_logger.read()) == 1:
             Rew = self.object_logger.read().iloc[-1].values[0]
         else: step_type = 0
-        RET = Obs, Rew * self.object_multiplier, Done, step_type
+        RET = [Obs, Rew * self.object_multiplier, Done, step_type]
+        RET = [np.asarray(I, dtype = 'float32') for I in RET]
         devprint("OPT.get_observation RET = ", RET)
         self.observation_lock_set.release()
         #assert not self.observation_lock_set.locked()
-        return RET
+        return *RET
     async def set_action(self, action):# set이 먼저 발생
         devprint("OPT.set_action", action)
         await self.action_lock_set.acquire()
@@ -247,7 +249,7 @@ class Normalizer:
         self.parameters = self.params_name
     def __call__(self, values):
         devprint("is shape [0, N] ?", values.shape)
-        return np.concatenate([np.zeros([1, self.get_param_cnt()]), values], axis = 0) 
+        return np.concatenate([np.zeros([1, self.get_param_cnt()], dtype = 'float32'), values], axis = 0) 
     def update(self, values):
         pass
     def get_param_cnt(self):
