@@ -5,7 +5,6 @@ Created on Fri Aug  7 13:37:10 2021
 
 @author: map
 """
-import threading
 import tensorflow as tf
 import numpy as np 
 from adabelief_tf import AdaBeliefOptimizer
@@ -173,7 +172,9 @@ class Agent(optopt.Agency_class):
         self.tf_agent.train_step_counter.assign(0)
         self.history = []
         self.finish_prepare = True
-    def _start(self):
+    def start(self):
+        assert self.reach_prepare
+        assert self.finish_prepare
         self.initial_collect_actor.run()
         self.reach_start = True
         episode = 0  
@@ -185,12 +186,6 @@ class Agent(optopt.Agency_class):
             episode += 1
             if self.config.verbose and episode % self.config.verbose == 0:
                 print(np.mean(self.history[-self.config.verbose]))
-    def start(self):
-        assert self.reach_prepare
-        assert self.finish_prepare
-        thread = threading.Thread(target=self._start)
-        thread.start()
-        return thread
     def finish(self):
         self.rb_observer.close()
         self.reverb_server.stop()
