@@ -38,7 +38,7 @@ class OPT:
 
         self.compiled = False
 
-    def compile(self):
+    async def compile(self):
         devprint("OPT.compile start")
         self.compiled = True
 
@@ -53,12 +53,12 @@ class OPT:
         self.observation_lock_set = asyncio.Lock()
         self.observation_lock_get = asyncio.Lock()
         devprint("OPT.compile observation_lock_set lock start", self.observation_lock_set)
-        run_until(self.observation_lock_set.acquire())
+        await self.observation_lock_set.acquire()
         devprint("OPT.compile observation_lock_set lock end", self.observation_lock_set)
 
         self.action_lock_set = asyncio.Lock()
         self.action_lock_get = asyncio.Lock()
-        run_until(self.action_lock_get.acquire())
+        await self.action_lock_get.acquire()
 
 
         devprint("OPT.compile env init start")
@@ -142,11 +142,11 @@ class OPT:
 
         self.observation_lock_set = asyncio.Lock()
         self.observation_lock_get = asyncio.Lock()
-        run_until(self.observation_lock_set.acquire())
+        await self.observation_lock_set.acquire()
 
         self.action_lock_set = asyncio.Lock()
         self.action_lock_get = asyncio.Lock()
-        run_until(self.action_lock_get.acquire())
+        await self.action_lock_get.acquire()
         #self.callback_logs[call_id] 를 지워도 되고 상관 없다.
         pass
 
