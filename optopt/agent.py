@@ -126,12 +126,13 @@ class Agent(optopt.Agency_class):
         random_policy = random_py_policy.RandomPyPolicy(
                             collect_env.time_step_spec(), collect_env.action_spec())
         
+
+        params = {'pad_end_of_episodes': True} if tf_agents.__version__ >= '0.8.0' else {}
         rb_observer = reverb_utils.ReverbAddTrajectoryObserver(
                             reverb_replay.py_client,
                             table_name,
-                            pad_end_of_episodes = True,
                             sequence_length=self.config.sequence_length,
-                            stride_length=1)
+                            stride_length=1, **params)
         self.initial_collect_actor = actor.Actor(
                             collect_env,
                             random_policy,

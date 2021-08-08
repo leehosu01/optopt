@@ -5,7 +5,7 @@ Created on Fri Aug  6 16:04:10 2021
 
 @author: map
 """
-from setuptools import setup, find_packages
+import setuptools
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
@@ -23,7 +23,7 @@ datafiles = []#recursive_dir_walker("ABC/*")
 
 setuptools.setup(
     name="optimizer optimizer",
-    version="0.0.0-alpha",
+    version="0.0.0-beta",
     author="Hosu Lee",
     author_email="leehosu01@naver.com",
     description="Control Optimizer's hyperparameter dynamically",
