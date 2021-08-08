@@ -237,10 +237,6 @@ class async_Agent:
             self.collect_actor.run()
             loss_info = self.agent_learner.run(iterations=1)
             self.history.append(loss_info.loss.numpy())
-
-    def start(self):
-        self.reach_start = True
-        self.training_process()
     def finish(self):
         self.rb_observer.close()
         self.reverb_server.stop()
