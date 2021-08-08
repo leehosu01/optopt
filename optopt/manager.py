@@ -121,6 +121,7 @@ class Manager(optopt.Management_class):
         self.last_objective = obj
         obs = list(zip(*sorted(obs_info.items())))[1]
         self.set_observation((np.asarray(obs, dtype = self.config.dtype), Rew, done, step_type))
+        self.set_hyperparameters()
         if done: self.train_wait_new = True 
 
 
