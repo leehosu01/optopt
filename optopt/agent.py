@@ -175,7 +175,8 @@ class Agent(optopt.Agency_class):
     def start(self):
         assert self.reach_prepare
         assert self.finish_prepare
-        self.initial_collect_actor.run()
+        try: self.initial_collect_actor.run()
+        except: pass
         self.reach_start = True
         episode = 0  
         while 1:
