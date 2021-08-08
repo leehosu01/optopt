@@ -11,6 +11,7 @@ from __future__ import division
 from __future__ import print_function
 
 import abc
+from numpy.core.defchararray import asarray
 import tensorflow as tf
 import numpy as np
 
@@ -25,11 +26,11 @@ from tf_agents.trajectories import time_step as ts
 
 tf.compat.v1.enable_v2_behavior()
 
-#def run_until(X): run_until.loop.run_until_complete(X)
-#run_until.loop = asyncio.get_event_loop()
-class ENV(py_environment.PyEnvironment):
+import optopt
+from optopt import manager
+class Env(py_environment.PyEnvironment):
     
-  def __init__(self, manager, action_cnt, feature_cnt, window_size = 16):
+  def __init__(self, manager :manager.Manager, action_cnt, feature_cnt, config : optopt.Config):
     self._action_spec = array_spec.BoundedArraySpec(
         shape=(action_cnt, ), dtype=np.float32, minimum=-1, maximum=1, name='action')
     self._observation_spec = array_spec.BoundedArraySpec(
@@ -37,19 +38,18 @@ class ENV(py_environment.PyEnvironment):
     self._state = 0
     self._episode_ended = False
     self.manager = manager
-    self.window_size = window_size
+    self.config = config
   def action_spec(self):
     return self._action_spec
 
   def observation_spec(self):
     return self._observation_spec
-  def Observation_post_processing(self, data):
-    return data[-1:]
+  def cast(self, *args):
+    return [np.asarray(I, dtype = self.config.dtype) for I in args]
   def _reset(self):
     Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
-    #Obs = self.Observation_post_processing(Obs)
     print("ENV._reset : ", Obs, Rew, self._episode_ended, step_type)
-    return ts.restart(Obs)
+    return ts.restart(*self.cast(Obs))
 
   def _step(self, action):
     print("ENV._step", action)
@@ -60,9 +60,6 @@ class ENV(py_environment.PyEnvironment):
     self.manager.set_action(action)
     print("ENV <= return set_action")
     Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
-    self._episode_ended = bool(self._episode_ended > 0.5)
-    #Obs = self.Observation_post_processing(Obs)
 
     if self._episode_ended: return ts.termination(Obs, Rew)
-    return ts.transition(Obs, Rew, discount = np.asarray(1. - self._episode_ended, 'float32'))
-import optopt
+    return ts.transition(*self.cast(Obs, Rew, 1. - self._episode_ended))

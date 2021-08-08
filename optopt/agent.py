@@ -7,6 +7,7 @@ Created on Fri Aug  7 13:37:10 2021
 """
 import threading
 import tensorflow as tf
+import numpy as np 
 from adabelief_tf import AdaBeliefOptimizer
 
 import tf_agents
@@ -31,76 +32,23 @@ from tf_agents.train.utils import spec_utils
 from tf_agents.train.utils import strategy_utils
 from tf_agents.train.utils import train_utils
 
-tempdir = tempfile.gettempdir()
-
-# Use "num_iterations = 1e6" for better results (2 hrs)
-# 1e5 is just so this doesn't take too long (1 hr)
-num_iterations = 100000 # @param {type:"integer"}
-
-initial_collect_steps = 10 # @param {type:"integer"}
-collect_steps_per_iteration = 1 # @param {type:"integer"}
-replay_buffer_capacity = 10000 # @param {type:"integer"}
-
-batch_size = 1 # @param {type:"integer"}
-
-critic_learning_rate = 3e-4 # @param {type:"number"}
-actor_learning_rate = 3e-4 # @param {type:"number"}
-alpha_learning_rate = 3e-4 # @param {type:"number"}
-target_update_tau = 0.005 # @param {type:"number"}
-target_update_period = 1 # @param {type:"number"}
-gamma = 0.99 # @param {type:"number"}
-reward_scale_factor = 1.0 # @param {type:"number"}
-
-log_interval = 1 # @param {type:"integer"}
-
-num_eval_episodes = 20 # @param {type:"integer"}
-eval_interval = 10000 # @param {type:"integer"}
-
-policy_save_interval = 5000 # @param {type:"integer"}
-
-class async_Agent:
-    def __init__(self, manager, environment, strategy = strategy_utils.get_strategy(tpu=False, use_gpu=False)):
+import optopt
+from optopt import manager, env
+class Agent:
+    def __init__(self, manager:manager.Manager, environment :env.Env, config :optopt.Config, strategy = strategy_utils.get_strategy(tpu=False, use_gpu=False)):
         self.manager = manager
         self.env = environment
+        self.config = config
 
-        collect_env = eval_env = self.env
+        collect_env = self.env
         observation_spec, action_spec, time_step_spec = spec_utils.get_tensor_specs(collect_env)
         with strategy.scope():
-            """
-            optimizer = AdaBeliefOptimizer(learning_rate=0.0003,
-                                            beta_1=0.9,
-                                            beta_2=0.999,
-                                            epsilon=1e-9,
-                                            weight_decay=0.0,
-                                            rectify=True,
-                                            amsgrad=False,
-                                            sma_threshold=5.0,
-                                            print_change_log=False)
-            self.agent = tf_agents.agents.PPOAgent(
-                self.env.time_step_spec(),
-                self.env.action_spec(),
-                num_epochs = 5, 
-                **params)
-            params = {}
-            model = tf_agents.networks.Sequential(
-                [tf.keras.layers.LSTM(128, return_sequences=True, return_state=True), 
-                 tf.keras.layers.LSTM(128, return_sequences=True, return_state=True),
-                 tf.keras.layers.Dense(self.env.action_spec().shape[-1], activation = 'sigmoid')]
-            )
-            params['actor_network'] = model
-            model = tf_agents.networks.Sequential(
-                [tf.keras.layers.LSTM(128, return_sequences=True, return_state=True), 
-                 tf.keras.layers.LSTM(128, return_sequences=True, return_state=True),
-                 tf.keras.layers.Dense(1)]
-            )
-            params['critic_network'] = model
-            """
             params = {}
             model = actor_distribution_rnn_network.ActorDistributionRnnNetwork(
                     observation_spec, action_spec,
                     input_fc_layer_params=[],
                     lstm_size = [128, 128],
-                    output_fc_layer_params = [],
+                    output_fc_layer_params = [32],
                     activation_fn = tf.keras.activations.relu,
                     continuous_projection_net=(
                         tanh_normal_projection_network.TanhNormalProjectionNetwork))
@@ -120,17 +68,17 @@ class async_Agent:
             self.tf_agent = tf_agent = sac_agent.SacAgent(
                     time_step_spec,
                     action_spec,
-                    actor_optimizer=tf.compat.v1.train.AdamOptimizer(
-                        learning_rate=actor_learning_rate),
-                    critic_optimizer=tf.compat.v1.train.AdamOptimizer(
-                        learning_rate=critic_learning_rate),
-                    alpha_optimizer=tf.compat.v1.train.AdamOptimizer(
-                        learning_rate=alpha_learning_rate),
-                    target_update_tau=target_update_tau,
-                    target_update_period=target_update_period,
+                    actor_optimizer=tf.keras.optimizers.Adam(
+                        learning_rate=self.config.actor_learning_rate),
+                    critic_optimizer=tf.keras.optimizers.Adam(
+                        learning_rate=self.config.critic_learning_rate),
+                    alpha_optimizer=tf.keras.optimizers.Adam(
+                        learning_rate=self.config.alpha_learning_rate),
+                    target_update_tau=self.config.target_update_tau,
+                    target_update_period=self.config.target_update_period,
                     td_errors_loss_fn=tf.math.squared_difference,
-                    gamma=gamma,
-                    reward_scale_factor=reward_scale_factor,
+                    gamma=self.config.gamma,
+                    reward_scale_factor=1.,
                     train_step_counter=train_step,
                     **params)
 
@@ -155,7 +103,7 @@ class async_Agent:
         table_name = 'uniform_table'
         table = reverb.Table(
             table_name,
-            max_size=replay_buffer_capacity,
+            max_size=self.config.replay_buffer_capacity,
             sampler=reverb.selectors.Uniform(),
             remover=reverb.selectors.Fifo(),
             rate_limiter=reverb.rate_limiters.MinSize(1))
@@ -163,39 +111,35 @@ class async_Agent:
         reverb_server = reverb.Server([table])
         reverb_replay = reverb_replay_buffer.ReverbReplayBuffer(
                             tf_agent.collect_data_spec,
-                            sequence_length=2,
+                            sequence_length=self.config.sequence_length,
                             table_name=table_name,
                             local_server=reverb_server)
         dataset = reverb_replay.as_dataset(
-            sample_batch_size=batch_size, num_steps=2).prefetch(50)
+            sample_batch_size=self.config.train_batch_size).prefetch(32)
         _experience_dataset_fn = lambda: dataset
         def experience_dataset_fn():
             print('start training')
             return _experience_dataset_fn
-        tf_eval_policy = tf_agent.policy
-        eval_policy = py_tf_eager_policy.PyTFEagerPolicy(
-                            tf_eval_policy, use_tf_function=True)
+        
         tf_collect_policy = tf_agent.collect_policy
         collect_policy = py_tf_eager_policy.PyTFEagerPolicy(
                             tf_collect_policy, use_tf_function=True)
         random_policy = random_py_policy.RandomPyPolicy(
                             collect_env.time_step_spec(), collect_env.action_spec())
+        
         rb_observer = reverb_utils.ReverbAddTrajectoryObserver(
                             reverb_replay.py_client,
                             table_name,
-                            sequence_length=2,
+                            pad_end_of_episodes = True,
+                            sequence_length=self.config.sequence_length,
                             stride_length=1)
-        self.reach_training_process2 = True
-        """
         self.initial_collect_actor = actor.Actor(
                             collect_env,
                             random_policy,
                             train_step,
-                            steps_per_run=initial_collect_steps,
+                            episodes_per_run=self.config.initial_collect_episodes,
                             observers=[rb_observer])
-        self.initial_collect_actor.run()
-        """
-        print("async_Agent prepare :1")
+                            
         env_step_metric = py_metrics.EnvironmentSteps()
         self.collect_actor = collect_actor = actor.Actor(
                             collect_env,
@@ -203,12 +147,10 @@ class async_Agent:
                             train_step,
                             episodes_per_run=1,
                             metrics=actor.collect_metrics(10),
-                            summary_dir=os.path.join(tempdir, learner.TRAIN_DIR),
+                            summary_dir=os.path.join(self.config.savedir, learner.TRAIN_DIR),
                             observers=[rb_observer, env_step_metric])
-        print("async_Agent prepare :2")
                             
-        saved_model_dir = os.path.join(tempdir, learner.POLICY_SAVED_MODEL_DIR)
-        print("async_Agent prepare :3")
+        saved_model_dir = os.path.join(self.config.savedir, learner.POLICY_SAVED_MODEL_DIR)
 
         # Triggers to save the agent's policy checkpoints.
         learning_triggers = [
@@ -216,29 +158,32 @@ class async_Agent:
                 saved_model_dir,
                 tf_agent,
                 train_step,
-                interval=policy_save_interval),
+                interval=self.config.policy_save_interval),
             triggers.StepPerSecondLogTrigger(train_step, interval=1000),
         ]
 
         self.agent_learner = agent_learner = learner.Learner(
-                tempdir,
+                self.config.savedir,
                 train_step,
                 tf_agent,
                 experience_dataset_fn,
                 triggers=learning_triggers)
-        print("async_Agent prepare :4")
         # Reset the train step
         self.tf_agent.train_step_counter.assign(0)
-        print("async_Agent prepare :5")
         self.history = []
         self.finish_prepare = True
     def _start(self):
+        self.initial_collect_actor.run()
         self.reach_start = True
-        for _ in range(num_iterations):
+        episode = 0  
+        while 1:
             # Training.
             self.collect_actor.run()
             loss_info = self.agent_learner.run(iterations=1)
             self.history.append(loss_info.loss.numpy())
+            episode += 1
+            if self.config.verbose and episode % self.config.verbose == 0:
+                print(np.mean(self.history[-self.config.verbose]))
     def start(self):
         assert self.reach_prepare
         assert self.finish_prepare
@@ -249,4 +194,3 @@ class async_Agent:
         self.rb_observer.close()
         self.reverb_server.stop()
     def get_history(self):return list(self.history)
-import optopt
