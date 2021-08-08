@@ -1,7 +1,7 @@
 
 import tempfile
 
-import manager, agent, env
+from optopt import manager, agent, env
 class Config:
     def __init__(self, 
                 initial_collect_steps = 10 ,
