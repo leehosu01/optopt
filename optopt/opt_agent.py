@@ -149,7 +149,7 @@ class async_Agent:
         eval_results = (', ').join('{} = {:.6f}'.format(name, result) for name, result in metrics.items())
         print('step = {0}: {1}'.format(step, eval_results))
 
-    async def training_process(self):
+    def training_process(self):
         self.reach_training_process = True
         collect_env = self.env
         tf_agent = self.tf_agent
@@ -236,7 +236,7 @@ class async_Agent:
 
     def start(self):
         self.reach_start = True
-        asyncio.ensure_future(self.training_process())
+        self.training_process()
     def finish(self):
         self.rb_observer.close()
         self.reverb_server.stop()
