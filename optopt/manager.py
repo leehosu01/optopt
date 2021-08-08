@@ -40,7 +40,6 @@ class Manager(optopt.Management_class):
         
         self.observation_queue = Queue(2)
         self.action_queue = Queue(2)
-        self.objective_queue = Queue(2)
 
         self.Variables.freeze()
 
@@ -67,15 +66,21 @@ class Manager(optopt.Management_class):
         self.get_observation_lock.release()
     def get_observation(self):
         self.get_observation_lock.acquire()
+        print("get_observation1", self.set_observation_lock.locked())
         assert self.set_observation_lock.locked()
+        print("get_observation2", self.observation_queue.qsize())
         RET = self.observation_queue.get()
+        print("get_observation3", self.observation_queue.qsize())
         self.set_observation_lock.release()
         return RET
 
     def set_action(self, action):
         self.set_action_lock.acquire()
+        print("set_action1", self.get_action_lock.locked())
         assert self.get_action_lock.locked()
+        print("set_action2", self.action_queue.qsize())
         self.action_queue.put(action)
+        print("set_action3", self.action_queue.qsize())
         self.get_action_lock.release()
     def get_action(self):
         self.get_action_lock.acquire()
