@@ -28,9 +28,9 @@ from tf_agents.trajectories import time_step as ts
 
 tf.compat.v1.enable_v2_behavior()
 
-def run_until(X): run_until.loop.run_until_complete(X)
-run_until.loop = asyncio.get_event_loop()
-
+#def run_until(X): run_until.loop.run_until_complete(X)
+#run_until.loop = asyncio.get_event_loop()
+def run_until(X):return asyncio.run(X)
 class ENV(py_environment.PyEnvironment):
     
   def __init__(self, manager, action_cnt, feature_cnt, window_size = 16):

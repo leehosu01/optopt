@@ -102,6 +102,7 @@ class OPT:
             Rew = self.object_logger.iloc[0].values[0]
         else: step_type = 0
         RET = Obs, Rew * self.object_multiplier, Done, step_type
+        devprint("OPT.get_observation RET = ", RET)
         self.observation_lock_set.release()
         assert not self.observation_lock_set.locked()
         return RET
