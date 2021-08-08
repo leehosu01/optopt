@@ -102,7 +102,7 @@ class Manager(optopt.Management_class):
 
     def epoch_end(self, obs_info, obj, done):
         assert self.compiled
-        Rew = self.last_objective if self.last_objective is None else (obj - self.last_objective)
+        Rew = obj if self.last_objective is None else (obj - self.last_objective)
         step_type = 2 if done else 1
         self.last_objective = obj
         self.set_observation((np.asarray(obs_info, dtype = self.config.dtype), Rew, done, step_type))
