@@ -35,10 +35,13 @@ class OPT:
         self.compiled = False
 
     def compile(self):
+        devprint("OPT.compile start")
         self.compiled = True
+
         self.Variables.make_frozen()
         self.normalizer = Normalizer(self.using_features)
         
+        devprint("OPT.compile build Logger start")
         self.observe_logger = Logger(self.using_features)
         self.action_logger = Logger(self.Variables.get_param_names())
         self.object_logger = Logger([self.objective])
