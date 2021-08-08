@@ -90,9 +90,9 @@ class OPT:
     async def get_observation(self): # get이 먼저 발생
         devprint("OPT.get_observation")
         assert self.observation_lock_set.locked()
+        assert 0
         await self.observation_lock_get.acquire()
         assert self.observation_lock_set.locked()
-        assert 0
         Obs = self.normalizer(self.observe_logger.read().values)
         Done = self.train_finish
         Rew = 0
@@ -226,9 +226,9 @@ class Logger:
         assert len(values) == len(self.params_name)
         assert type(values) in [list, tuple, dict]
         if type(values) in [list, tuple]: 
-            self.log = self.log.append(dict(zip(self.params_name, values)))
+            self.log = self.log.append(dict(zip(self.params_name, values)), ignore_index = True)
         if type(values) == dict: 
-            self.log = self.log.append(values)
+            self.log = self.log.append(values, ignore_index = True)
     def read(self, cols = None):
         if cols is not None:
             assert all(c in self.params_name for c in cols)
