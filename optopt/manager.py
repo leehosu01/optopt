@@ -32,7 +32,7 @@ class Manager(optopt.Management_class):
         assert not self.compiled
         self.set_observation_lock = threading.Lock()
         self.get_observation_lock = threading.Lock()
-        self.set_observation_lock.acquire()
+        self.get_observation_lock.acquire()
 
         self.set_action_lock = threading.Lock()
         self.get_action_lock = threading.Lock()
