@@ -195,7 +195,7 @@ class async_Agent:
                             observers=[rb_observer])
         self.initial_collect_actor.run()
         """
-
+        print("async_Agent prepare :1")
         env_step_metric = py_metrics.EnvironmentSteps()
         self.collect_actor = collect_actor = actor.Actor(
                             collect_env,
@@ -205,8 +205,10 @@ class async_Agent:
                             metrics=actor.collect_metrics(10),
                             summary_dir=os.path.join(tempdir, learner.TRAIN_DIR),
                             observers=[rb_observer, env_step_metric])
+        print("async_Agent prepare :2")
                             
         saved_model_dir = os.path.join(tempdir, learner.POLICY_SAVED_MODEL_DIR)
+        print("async_Agent prepare :3")
 
         # Triggers to save the agent's policy checkpoints.
         learning_triggers = [
@@ -224,8 +226,10 @@ class async_Agent:
                 tf_agent,
                 experience_dataset_fn,
                 triggers=learning_triggers)
+        print("async_Agent prepare :4")
         # Reset the train step
         self.tf_agent.train_step_counter.assign(0)
+        print("async_Agent prepare :5")
         self.history = []
         self.finish_prepare = True
     def start(self):
