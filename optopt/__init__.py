@@ -228,7 +228,7 @@ class simple_callback(tf.keras.callbacks.Callback):
 class Logger:
     def __init__(self, params_name):
         self.params_name = params_name
-        self.log = pd.DataFrame(columns=self.params_name)
+        self.log = pd.DataFrame(columns=self.params_name, dtype = 'float32')
     def write(self, values):
         assert len(values) == len(self.params_name)
         assert type(values) in [list, tuple, dict]
