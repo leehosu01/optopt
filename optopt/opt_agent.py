@@ -201,7 +201,7 @@ class async_Agent:
                             collect_env,
                             collect_policy,
                             train_step,
-                            steps_per_run=1,
+                            episodes_per_run=1,
                             metrics=actor.collect_metrics(10),
                             summary_dir=os.path.join(tempdir, learner.TRAIN_DIR),
                             observers=[rb_observer, env_step_metric])

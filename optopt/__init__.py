@@ -60,7 +60,6 @@ class OPT:
         self.action_lock_get = asyncio.Lock()
         await self.action_lock_get.acquire()
 
-
         self.train_finish = False
 
         devprint("OPT.compile env init start")
@@ -137,6 +136,7 @@ class OPT:
         assert self.compiled
 
         self.train_finish = False
+        await self.set_hyperparameters()
     async def epoch_end(self, info):
         devprint("OPT.epoch_end", info)
         await self.set_observation(*info)
