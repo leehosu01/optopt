@@ -93,15 +93,15 @@ class OPT:
         #assert 0
         await self.observation_lock_get.acquire()
         #assert self.observation_lock_set.locked()
-        devprint("OPT.get_observation1")
+        self.get_observation1 = True
         Obs = self.normalizer(self.observe_logger.read().values)
-        devprint("OPT.get_observation2")
+        self.get_observation2 = True
         Done = self.train_finish
-        devprint("OPT.get_observation3")
+        self.get_observation3 = True
         Rew = 0
-        devprint("OPT.get_observation4")
+        self.get_observation4 = True
         step_type = 2 if Done else 1
-        devprint("OPT.get_observation5")
+        self.get_observation5 = True
         if len(self.object_logger.read()) > 1:
             Rew = self.object_logger.read().iloc[-1].values[0] - self.object_logger.iloc[-2].read().values[0]
         elif len(self.object_logger.read()) == 1:
