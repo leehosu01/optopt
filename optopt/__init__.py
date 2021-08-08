@@ -52,9 +52,10 @@ class OPT:
         run_until(self.action_lock_get.acquire())
 
 
-
+        devprint("OPT.compile env init start")
         self.env = opt_env.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
         #self.env = tf_agents.environments.py_environment.PyEnvironment(self.env)
+        devprint("OPT.compile agent init start")
         self.agent = opt_agent.async_Agent(self, self.env)
         devprint("OPT.compile agent init finish")
         self.agent.start()
