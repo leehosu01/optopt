@@ -61,6 +61,8 @@ class OPT:
         await self.action_lock_get.acquire()
 
 
+        self.train_finish = False
+
         devprint("OPT.compile env init start")
         self.env = opt_env.ENV(self, self.Variables.get_param_cnt(), self.normalizer.get_param_cnt())
         #self.env = tf_agents.environments.py_environment.PyEnvironment(self.env)
