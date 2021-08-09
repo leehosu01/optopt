@@ -176,6 +176,8 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
 
         return tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
 
+    def get_config(self):
+        return {"moving": self.moving, 'clip': self.clip}
 class Agent(optopt.Agency_class):
     def __init__(self, manager:optopt.Management_class,
                     environment :optopt.Environment_class,
@@ -191,10 +193,10 @@ class Agent(optopt.Agency_class):
             params = {}
             model = tf_agents.networks.actor_distribution_rnn_network.ActorDistributionRnnNetwork(
                         observation_spec, action_spec, preprocessing_layers=Exp_normalization_layer(clip = 2),
-                        preprocessing_combiner=None, conv_layer_params=None, input_fc_layer_params=[]
+                        preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1), conv_layer_params=None, input_fc_layer_params=[]
                         , input_dropout_layer_params=None, lstm_size=[256],
                         output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
-                        dtype=tf.float32, discrete_projection_net=_categorical_projection_net,
+                        dtype=tf.float32, #discrete_projection_net=_categorical_projection_net,
                         continuous_projection_net=(lambda *args, **kwargs:IdentityProjectionNetwork(*args, **kwargs, std_scaling = 0.)),
                         rnn_construction_fn=None,
                         rnn_construction_kwargs={}, name='ActorDistributionRnnNetwork'
