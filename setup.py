@@ -23,7 +23,7 @@ datafiles = []#recursive_dir_walker("ABC/*")
 
 setuptools.setup(
     name="optimizer optimizer",
-    version="0.0.0-beta",
+    version="0.1.0",
     author="Hosu Lee",
     author_email="leehosu01@naver.com",
     description="Control Optimizer's hyperparameter dynamically",
