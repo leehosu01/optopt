@@ -116,7 +116,8 @@ class Manager(optopt.Management_class):
 
     def epoch_end(self, obs_info, obj, done):
         assert self.compiled
-        Rew = obj if self.last_objective is None else (obj - self.last_objective)
+        obj_delta = obj if self.last_objective is None else (obj - self.last_objective)
+        Rew = obj_delta * self.object_multiplier
         step_type = 2 if done else 1
         self.last_objective = obj
         obs = list(zip(*sorted(obs_info.items())))[1]
