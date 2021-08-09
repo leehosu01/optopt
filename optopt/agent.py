@@ -6,7 +6,8 @@ Created on Fri Aug  7 13:37:10 2021
 @author: map
 """
 import tensorflow as tf
-import numpy as np 
+import numpy as np
+from tensorflow.python.keras.layers.core import Lambda 
 from adabelief_tf import AdaBeliefOptimizer
 
 import tf_agents
@@ -203,7 +204,8 @@ class Agent(optopt.Agency_class):
                     )
             params['actor_network'] = model
             model = tf_agents.networks.value_rnn_network.ValueRnnNetwork(
-                        (observation_spec, action_spec), preprocessing_layers=Exp_normalization_layer(clip = 2), preprocessing_combiner=None,
+                        [observation_spec, action_spec], preprocessing_layers=[Exp_normalization_layer(clip = 2), tf.keras.layers.Lambda(lambda X:X)],
+                        preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
                         conv_layer_params=None, input_fc_layer_params=[],
                         input_dropout_layer_params=None, lstm_size=[256], output_fc_layer_params=[],
                         activation_fn=tf.keras.activations.relu, dtype=tf.float32,
