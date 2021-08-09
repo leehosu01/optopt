@@ -198,7 +198,7 @@ class Agent(optopt.Agency_class):
                         , input_dropout_layer_params=None, lstm_size=[256],
                         output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
                         dtype=tf.float32, #discrete_projection_net=_categorical_projection_net,
-                        continuous_projection_net=(lambda *args, **kwargs:IdentityProjectionNetwork(*args, **kwargs, std_scaling = 0.)),
+                        continuous_projection_net=tanh_normal_projection_network.TanhNormalProjectionNetwork,#(IdentityProjectionNetwork),
                         rnn_construction_fn=None,
                         rnn_construction_kwargs={}, name='ActorDistributionRnnNetwork'
                     )
