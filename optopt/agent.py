@@ -65,7 +65,7 @@ class IdentityProjectionNetwork(network.DistributionNetwork):
     self._means_projection_layer = tf.keras.layers.Dense(
         sample_spec.shape.num_elements(),
         activation = mean_activation_fn,
-        kernel_initializer='zeros',
+        kernel_initializer=tf.random_normal_initializer(mean=0.0, stddev=0.01),
         bias_initializer='zeros',
         name='means_projection_layer')
 
@@ -151,8 +151,8 @@ class Agent(optopt.Agency_class):
                     observation_spec, action_spec,
                     input_fc_layer_params=[],
                     lstm_size = [128, 128],
-                    output_fc_layer_params = [32],
-                    activation_fn = tf.keras.activations.relu,
+                    output_fc_layer_params = [256],
+                    activation_fn = tf.keras.activations.tanh,
                     continuous_projection_net=(IdentityProjectionNetwork))
             params['actor_network'] = model
             model = critic_rnn_network.CriticRnnNetwork(
