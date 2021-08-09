@@ -235,7 +235,7 @@ class Agent(optopt.Agency_class):
                             table_name,
                             sequence_length=self.config.sequence_length,
                             stride_length=1, **params)
-        if self.config.collect_episodes_for_test_env:
+        if self.config.collect_episodes_for_env_testing:
             self.initial_collect_actor = actor.Actor(
                             collect_env,
                             random_policy,

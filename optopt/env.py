@@ -60,7 +60,10 @@ class Env(optopt.Environment_class):
     self.wait_reset = False
     return ts.restart(*self.cast(Obs))
   def _step(self, action):
-    if self._episode_ended: return self.reset()
+    assert all((-1<= action ) & ( action <= 1))
+    if self._episode_ended: 
+      print("ENV._step => reset with following action ..? ", action)
+      return self.reset()
     assert not self.wait_reset
     self.is_reset = False
 
