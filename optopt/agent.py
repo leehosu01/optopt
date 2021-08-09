@@ -235,12 +235,12 @@ class Agent(optopt.Agency_class):
                             table_name,
                             sequence_length=self.config.sequence_length,
                             stride_length=1, **params)
-        if self.config.initial_collect_episodes:
+        if self.config.collect_episodes_for_test_env:
             self.initial_collect_actor = actor.Actor(
                             collect_env,
                             random_policy,
                             train_step,
-                            episodes_per_run=self.config.initial_collect_episodes,
+                            episodes_per_run=self.config.collect_episodes_for_env_testing,
                             observers=[rb_observer])
                             
         env_step_metric = py_metrics.EnvironmentSteps()
@@ -248,7 +248,7 @@ class Agent(optopt.Agency_class):
                             collect_env,
                             collect_policy,
                             train_step,
-                            episodes_per_run=1,
+                            episodes_per_run=self.config.collect_episodes_for_training,
                             metrics=actor.collect_metrics(10),
                             summary_dir=os.path.join(self.config.savedir, learner.TRAIN_DIR),
                             observers=[rb_observer, env_step_metric])

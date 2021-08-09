@@ -24,7 +24,8 @@ class Config:
                 target_update_period = 1,
                 gamma = 0.99 ,
                 log_interval = 1,
-                initial_collect_episodes = 0,
+                collect_episodes_for_training = 4,
+                collect_episodes_for_env_testing = 0,
                 policy_save_interval = 4,
                 savedir = tempfile.gettempdir(),
                 dtype = 'float32',
@@ -41,7 +42,8 @@ class Config:
         self.target_update_period = target_update_period
         self.gamma = gamma 
         self.log_interval = log_interval
-        self.initial_collect_episodes = initial_collect_episodes
+        self.collect_episodes_for_training = collect_episodes_for_training
+        self.collect_episodes_for_env_testing = collect_episodes_for_env_testing
         self.policy_save_interval = policy_save_interval
         self.savedir = savedir
         self.dtype = dtype

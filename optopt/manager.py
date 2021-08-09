@@ -57,7 +57,6 @@ class Manager(optopt.Management_class):
     def get_callback(self):
         assert self.compiled
         return simple_callback(self, self.using_features, self.objective)
-        return [simple_callback(self, self.using_features, self.objective) for _ in range(self.config.parallel_env_cnt)]
 
     def set_observation(self, infos):#obs_info, rew, done, step_type
         assert len(infos) == 4
