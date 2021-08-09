@@ -142,10 +142,10 @@ class Agent(optopt.Agency_class):
         self.manager = manager
         self.env = environment
         self.config = config
-
+        self.strategy = strategy
         collect_env = self.env
         observation_spec, action_spec, time_step_spec = spec_utils.get_tensor_specs(collect_env)
-        with strategy.scope():
+        with self.strategy.scope():
             params = {}
             model = actor_distribution_rnn_network.ActorDistributionRnnNetwork(
                     observation_spec, action_spec,
@@ -270,7 +270,8 @@ class Agent(optopt.Agency_class):
                 train_step,
                 tf_agent,
                 experience_dataset_fn,
-                triggers=learning_triggers)
+                triggers=learning_triggers,
+                strategy = self.strategy)
         # Reset the train step
         self.tf_agent.train_step_counter.assign(0)
         self.history = []
