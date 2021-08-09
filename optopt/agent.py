@@ -133,6 +133,48 @@ class IdentityProjectionNetwork(network.DistributionNetwork):
     stds = batch_squash.unflatten(stds)
 
     return self.output_spec.build_distribution(loc=means, scale=stds), ()
+class Exp_normalization_layer(tf.keras.layers.Layer):
+    def __init__(self, moving = 0.99, clip = 1):
+        super(Exp_normalization_layer, self).__init__()
+        self.momentum = self.add_weight(name = "moving", 
+                                    shape = (), 
+                                    initializer = 'zeros',
+                                    dtype = tf.float32, 
+                                    trainable = False)
+        self.run_count = self.add_weight(name = "run_count", 
+                                    shape = (), 
+                                    initializer = 'zeros',
+                                    dtype = tf.float32, 
+                                    trainable = False)
+        self.moving = moving
+        self.clip = clip
+
+    def build(self, input_shape):
+        self.exp_moving_mean = self.add_weight("exp_moving_mean",
+                                    shape=[input_shape[-1]], 
+                                    initializer = 'zeros',
+                                    dtype = tf.float32, 
+                                    trainable = False)
+        self.exp_moving_var = self.add_weight("exp_moving_mean",
+                                    shape=[input_shape[-1]], 
+                                    initializer = 'ones',
+                                    dtype = tf.float32, 
+                                    trainable = False)
+        
+    def call(self, inputs, training = None):
+        # https://stats.stackexchange.com/a/111912
+        #최초 샘플이 없기 때문에 mean에 신규 데이터를 포함해서 산정
+        if training:
+            self.run_count.assign_add(1.)
+            self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
+            
+            var = tf.reduce_mean((inputs - self.exp_moving_mean) ** 2, tf.range(tf.rank(inputs) - 1))
+            self.exp_moving_var.assign( self.momentum * (self.exp_moving_var + (1 - self.momentum) * var) )
+
+            mean = tf.reduce_mean(inputs, tf.range(tf.rank(inputs) - 1))
+            self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean)
+
+        return tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
 
 class Agent(optopt.Agency_class):
     def __init__(self, manager:optopt.Management_class,
@@ -147,40 +189,38 @@ class Agent(optopt.Agency_class):
         observation_spec, action_spec, time_step_spec = spec_utils.get_tensor_specs(collect_env)
         with self.strategy.scope():
             params = {}
-            model = actor_distribution_rnn_network.ActorDistributionRnnNetwork(
-                    observation_spec, action_spec,
-                    input_fc_layer_params=[],
-                    lstm_size = [128, 128],
-                    output_fc_layer_params = [256],
-                    activation_fn = tf.keras.activations.tanh,
-                    continuous_projection_net=(IdentityProjectionNetwork))
+            model = tf_agents.networks.actor_distribution_rnn_network.ActorDistributionRnnNetwork(
+                        observation_spec, action_spec, preprocessing_layers=Exp_normalization_layer(clip = 2),
+                        preprocessing_combiner=None, conv_layer_params=None, input_fc_layer_params=[]
+                        , input_dropout_layer_params=None, lstm_size=[256],
+                        output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
+                        dtype=tf.float32, discrete_projection_net=_categorical_projection_net,
+                        continuous_projection_net=(lambda *args, **kwargs:IdentityProjectionNetwork(*args, **kwargs, std_scaling = 0.)),
+                        rnn_construction_fn=None,
+                        rnn_construction_kwargs={}, name='ActorDistributionRnnNetwork'
+                    )
             params['actor_network'] = model
-            model = critic_rnn_network.CriticRnnNetwork(
-                        (observation_spec, action_spec), observation_conv_layer_params=None,
-                        observation_fc_layer_params=(64,), action_fc_layer_params=(64,),
-                        joint_fc_layer_params=[128], lstm_size=[128], output_fc_layer_params=(64, ),
-                        activation_fn=tf.keras.activations.relu, kernel_initializer=None,
-                        last_kernel_initializer=None, rnn_construction_fn=None,
-                        rnn_construction_kwargs=None, name='CriticRnnNetwork'
+            model = tf_agents.networks.value_rnn_network.ValueRnnNetwork(
+                        (observation_spec, action_spec), preprocessing_layers=Exp_normalization_layer(clip = 2), preprocessing_combiner=None,
+                        conv_layer_params=None, input_fc_layer_params=[],
+                        input_dropout_layer_params=None, lstm_size=[256], output_fc_layer_params=[],
+                        activation_fn=tf.keras.activations.relu, dtype=tf.float32,
+                        name='ValueRnnNetwork'
                     )
             params['critic_network'] = model
 
             train_step = self.train_step = train_utils.create_train_step()
-            self.tf_agent = tf_agent = sac_agent.SacAgent(
+            self.tf_agent = tf_agent = tf_agents.agents.Td3Agent(
                     time_step_spec,
                     action_spec,
                     actor_optimizer=tf.keras.optimizers.Adam(
                         learning_rate=self.config.actor_learning_rate),
                     critic_optimizer=tf.keras.optimizers.Adam(
                         learning_rate=self.config.critic_learning_rate),
-                    alpha_optimizer=tf.keras.optimizers.Adam(
-                        learning_rate=self.config.alpha_learning_rate),
-                    target_update_tau=self.config.target_update_tau,
-                    target_update_period=self.config.target_update_period,
                     td_errors_loss_fn=tf.math.squared_difference,
-                    gamma=self.config.gamma,
-                    reward_scale_factor=1.,
                     train_step_counter=train_step,
+                    target_update_tau=self.config.target_update_tau,
+                    gamma=self.config.gamma,
                     **params)
 
             tf_agent.initialize()
