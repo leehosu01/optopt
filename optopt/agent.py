@@ -216,7 +216,9 @@ class Agent(optopt.Agency_class):
                             table_name=table_name,
                             local_server=reverb_server)
         dataset = reverb_replay.as_dataset(
-            sample_batch_size=self.config.train_batch_size).prefetch(32)
+            sample_batch_size=self.config.train_batch_size,
+            num_steps=self.config.sequence_length,
+            num_parallel_calls = 2, ).prefetch(32)
         _experience_dataset_fn = lambda: dataset
         def experience_dataset_fn():
             print('start training')
