@@ -16,6 +16,7 @@ class Config:
                 replay_buffer_capacity = 1000,
                 sequence_length = 5,
                 train_batch_size = 1,
+                train_iterations = 8,
                 parallel_env_cnt = None,
                 critic_learning_rate = 3e-4,
                 actor_learning_rate = 3e-4,
@@ -34,6 +35,7 @@ class Config:
         self.replay_buffer_capacity = replay_buffer_capacity
         self.sequence_length = sequence_length
         self.train_batch_size = train_batch_size
+        self.train_iterations = train_iterations
         self.parallel_env_cnt = parallel_env_cnt
         self.critic_learning_rate =critic_learning_rate
         self.actor_learning_rate = actor_learning_rate

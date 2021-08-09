@@ -288,7 +288,7 @@ class Agent(optopt.Agency_class):
         while 1:
             # Training.
             self.collect_actor.run()
-            loss_info = self.agent_learner.run(iterations=1)
+            loss_info = self.agent_learner.run(iterations=self.config.train_iterations)
             self.history.append(loss_info.loss.numpy())
             episode += 1
             if self.config.verbose and episode % self.config.verbose == 0:
