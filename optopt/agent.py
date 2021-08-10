@@ -164,15 +164,16 @@ class Agent(optopt.Agency_class):
                         observation_spec, action_spec, preprocessing_layers=opt_network.Exp_normalization_layer(clip = 2),
                         preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
                         input_fc_layer_params=[], input_dropout_layer_params=None,
-                        lstm_size=[256],
+                        lstm_size=[512],
                         output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
                         dtype=tf.float32)
             params['actor_network'] = model
+
             model = tf_agents.networks.value_rnn_network.ValueRnnNetwork(
                         (observation_spec, action_spec), preprocessing_layers=(opt_network.Exp_normalization_layer(clip = 2), tf.keras.layers.Lambda(lambda X:X)),
                         preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
                         conv_layer_params=None, input_fc_layer_params=[],
-                        input_dropout_layer_params=None, lstm_size=[256], output_fc_layer_params=[],
+                        input_dropout_layer_params=None, lstm_size=[512], output_fc_layer_params=[],
                         activation_fn=tf.keras.activations.relu, dtype=tf.float32,
                         name='ValueRnnNetwork'
                     )
@@ -186,7 +187,6 @@ class Agent(optopt.Agency_class):
                         learning_rate=self.config.actor_learning_rate),
                     critic_optimizer=tf.keras.optimizers.Adam(
                         learning_rate=self.config.critic_learning_rate),
-                    td_errors_loss_fn=tf.math.squared_difference,
                     train_step_counter=train_step,
                     target_update_tau=self.config.target_update_tau,
                     gamma=self.config.gamma,
