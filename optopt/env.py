@@ -42,6 +42,10 @@ class Env(optopt.Environment_class):
     self.is_reset = False
 
     self.last_observation = None
+    self.hyper_parameter = None
+    self.steps = None
+  def random_init_parameter(self):
+    return tf.random.uniform(self._action_spec.shape, -1.5, +1.5)
   def action_spec(self):
     return self._action_spec
 
@@ -50,6 +54,8 @@ class Env(optopt.Environment_class):
   def cast(self, *args):
     return [np.asarray(I, dtype = self.config.dtype) for I in args]
   def _reset(self):
+    self.hyper_parameter = self.random_init_parameter()
+    self.steps = 0
     self.last_observation = RET = self.manager.get_observation() if not self.is_reset or self.wait_reset else self.last_observation
     if not self.wait_reset:
       print("ABNORMAL! reset with self.wait_reset == ", self.wait_reset)
@@ -60,14 +66,18 @@ class Env(optopt.Environment_class):
     self.wait_reset = False
     return ts.restart(*self.cast(Obs))
   def _step(self, action):
-    assert all((-1<= action ) & ( action <= 1))
+    #assert all((-1<= action ) & ( action <= 1))
     if self._episode_ended: 
       print("ENV._step => reset with following action ..? ", action)
       return self.reset()
     assert not self.wait_reset
     self.is_reset = False
+    self.steps += 1
 
-    action = (action + 1)/2
+    self.hyper_parameter += action * (1 + max(0, 5 - self.steps) / 4)
+    action = tf.sigmoid(self.hyper_parameter)
+    self.hyper_parameter = tf.clip_by_value(self.hyper_parameter, -2, 2)
+
     print("ENV._step => call set_action", action)
     self.manager.set_action(action)
     print("ENV._step <= return set_action")
