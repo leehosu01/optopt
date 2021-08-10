@@ -143,15 +143,15 @@ class Variable_definer:
             warnings.warn(f"{name} is duplicated, check configration. We apply only first setting.", UserWarning)
         else: self.hyper_parameters[name] = [tfv, func]
         return tfv
-    def loguniform(self, name :str , min_v :float, max_v :float):
+    def loguniform(self, name :str , min_v :float, max_v :float, post_processing :function = (lambda X:X)):
         assert not self.is_frozen
         assert 0 < min_v < max_v
         min_lv, max_lv = math.log(min_v), math.log(max_v)
-        return self.set_function(name, lambda rate: math.exp( (max_lv - min_lv) * rate + min_lv ))
-    def uniform(self, name :str , min_v :float = 0., max_v :float = 1.):
+        return self.set_function(name, lambda rate: post_processing(math.exp( (max_lv - min_lv) * rate + min_lv )))
+    def uniform(self, name :str , min_v :float = 0., max_v :float = 1., post_processing :function = (lambda X:X)):
         assert not self.is_frozen
         assert min_v < max_v
-        return self.set_function(name, lambda rate: ( (max_v - min_v) * rate + min_v ))
+        return self.set_function(name, lambda rate: post_processing( (max_v - min_v) * rate + min_v ))
     def custom(self, name, func):
         assert not self.is_frozen
         return self.set_function(name, func)
