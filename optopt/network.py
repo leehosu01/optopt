@@ -1,6 +1,5 @@
 
 
-
 import gin
 import numpy as np
 import tensorflow as tf  # pylint: disable=g-explicit-tensorflow-version-import
@@ -141,7 +140,6 @@ class actor_deterministic_rnn_network(network.Network):
     super(actor_deterministic_rnn_network, self).__init__(
         input_tensor_spec=input_tensor_spec,
         state_spec=lstm_encoder.state_spec,
-        output_spec=output_tensor_spec,
         name=name)
 
     self._output_tensor_spec = output_tensor_spec
@@ -151,16 +149,27 @@ class actor_deterministic_rnn_network(network.Network):
     max_v = output_tensor_spec.maximum
 
     self._projection_networks = tf.keras.Sequential()
-    self._projection_networks.add(tf.keras.layers.Flatten())
     self._projection_networks.add(tf.keras.layers.Dense(required_units))
-    self._projection_networks.add(tf.keras.layers.Lambda(lambda X: tf.reshape(X, [-1] + list(output_tensor_spec.shape))))
+    self._projection_networks.add(tf.keras.layers.Lambda(lambda X: tf.reshape(X, tf.concat([tf.shape(X)[:-1],tf.convert_to_tensor(output_tensor_spec.shape)], axis = -1))))
     self._projection_networks.add(tf.keras.layers.Lambda((lambda X: tf.keras.activations.sigmoid(X) * (max_v - min_v) + min_v), dtype = dtype))
+    #self._projection_networks.add(tf.keras.layers.Lambda(lambda X: tf.reshape(X, tf.shape(X)[:2] + [-1])))
+    #self._projection_networks.add(tf.keras.layers.Dense(required_units))
+    #self._projection_networks.add(tf.keras.layers.Lambda(lambda X: tf.reshape(X, tf.shape(X)[:2] + list(output_tensor_spec.shape))))
+    #self._projection_networks.add(tf.keras.layers.Lambda((lambda X: tf.keras.activations.sigmoid(X) * (max_v - min_v) + min_v), dtype = dtype))
   @property
   def output_tensor_spec(self):
     return self._output_tensor_spec
   def call(self, observation, step_type, network_state=(), training=False):
+    def collecting(state):
+        state = tf.expand_dims(state, axis = -2)
+        output_actions = self._projection_networks(state)
+        output_actions = tf.squeeze(output_actions, axis = -2)
+        return output_actions
+    def training(state):
+        output_actions = self._projection_networks(state)
+        return output_actions
+    
     state, network_state = self._lstm_encoder(
         observation, step_type=step_type, network_state=network_state,
         training=training)
-    output_actions = self._projection_networks(state)
-    return output_actions, network_state
+    return tf.cond(tf.equal(tf.rank(state), 2), lambda : collecting(state), lambda : training(state) ), network_state

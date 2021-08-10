@@ -169,7 +169,7 @@ class Agent(optopt.Agency_class):
                         dtype=tf.float32)
             params['actor_network'] = model
             model = tf_agents.networks.value_rnn_network.ValueRnnNetwork(
-                        [observation_spec, action_spec], preprocessing_layers=[opt_network.Exp_normalization_layer(clip = 2), tf.keras.layers.Lambda(lambda X:X)],
+                        (observation_spec, action_spec), preprocessing_layers=(opt_network.Exp_normalization_layer(clip = 2), tf.keras.layers.Lambda(lambda X:X)),
                         preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
                         conv_layer_params=None, input_fc_layer_params=[],
                         input_dropout_layer_params=None, lstm_size=[256], output_fc_layer_params=[],
