@@ -10,7 +10,7 @@ from tf_agents.specs import tensor_spec
 from tf_agents.utils import nest_utils
 
 class Exp_normalization_layer(tf.keras.layers.Layer):
-    def __init__(self, moving = 0.99, clip = 1):
+    def __init__(self, moving = 0.995, clip = 1):
         super(Exp_normalization_layer, self).__init__()
         self.momentum = self.add_weight(name = "moving", 
                                     shape = (), 
@@ -40,7 +40,8 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
     def call(self, inputs, training = None):
         # https://stats.stackexchange.com/a/111912
         #최초 샘플이 없기 때문에 mean에 신규 데이터를 포함해서 산정
-        if training:
+        tf.print("training = ", training)
+        if not training:
             self.run_count.assign_add(1.)
             self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
             
@@ -173,3 +174,35 @@ class actor_deterministic_rnn_network(network.Network):
         observation, step_type=step_type, network_state=network_state,
         training=training)
     return tf.cond(tf.equal(tf.rank(state), 2), lambda : collecting(state), lambda : training(state) ), network_state
+class weight_metrics_wrapper(tf.keras.models.Model):
+    def __init__(self, model:tf.keras.models.Model):
+        super(weight_metrics_wrapper, self).__init__()
+        self.model = model
+    def get_metrics(self):
+        name_set = {}
+        metrics = []
+        for lay in self.model.layers:
+            for i, W in enumerate(lay.weights):
+                try: 
+                    lay_name = lay.name
+                    try:
+                        int(lay_name.split('_')[-1])
+                        lay_name = '_'.join(lay_name.split('_')[:-1])
+                    except: lay_name = lay_name
+                    name = lay_name + f'_weight_{i}_norm'
+                    if name in name_set:
+                        name_set[name]+=1
+                        name += f"_{name_set[name]}"
+                    else: name_set[name] = 0
+                    metrics.append({'value':tf.norm(W, 2), 'name': name})
+                except: pass
+        return metrics
+
+    def get_metric_names(self):
+        return [M['name'] for M in self.get_metrics()]
+
+    def call(self, input, training = None):
+        output = self.model(input, training)
+        if training:
+            for M in self.get_metrics(): self.add_metric(M['value'], name = M['name'])
+        return output
