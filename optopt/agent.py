@@ -164,7 +164,7 @@ class Agent(optopt.Agency_class):
                         observation_spec, action_spec, preprocessing_layers=opt_network.Exp_normalization_layer(clip = 2),
                         preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
                         input_fc_layer_params=[], input_dropout_layer_params=None,
-                        lstm_size=[256],
+                        lstm_size=self.config.lstm_size,
                         output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
                         dtype=tf.float32)
             params['actor_network'] = model
@@ -173,7 +173,7 @@ class Agent(optopt.Agency_class):
                         (observation_spec, action_spec), preprocessing_layers=(opt_network.Exp_normalization_layer(clip = 2), tf.keras.layers.Lambda(lambda X:X)),
                         preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
                         conv_layer_params=None, input_fc_layer_params=[],
-                        input_dropout_layer_params=None, lstm_size=[256], output_fc_layer_params=[],
+                        input_dropout_layer_params=None, lstm_size=self.config.lstm_size, output_fc_layer_params=[],
                         activation_fn=tf.keras.activations.relu, dtype=tf.float32,
                         name='ValueRnnNetwork'
                     )
@@ -300,7 +300,7 @@ class Agent(optopt.Agency_class):
                 self.collect_actor.run()
                 episode += 1
 
-                loss_info = self.agent_learner.run(iterations=int((episode ** 0.5) * self.config.train_iterations) )
+                loss_info = self.agent_learner.run(iterations=int(self.config.train_iterations) )
                 self.history.append(loss_info.loss.numpy())
                 if self.config.verbose and episode % self.config.verbose == 0:
                     print(np.mean(self.history[-self.config.verbose]))

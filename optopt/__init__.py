@@ -13,6 +13,7 @@ class Agency_class:
         pass
 class Config:
     def __init__(self, 
+                lstm_size = [256],
                 replay_buffer_capacity = 10000,
                 sequence_length = 5,
                 train_batch_size = 32,
@@ -32,6 +33,7 @@ class Config:
                 dtype = 'float32',
                 verbose = 0):
         assert parallel_env_cnt == None# still not implemented!
+        self.lstm_size = lstm_size
         self.replay_buffer_capacity = replay_buffer_capacity
         self.sequence_length = sequence_length
         self.train_batch_size = train_batch_size
