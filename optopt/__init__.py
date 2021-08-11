@@ -11,6 +11,11 @@ class Environment_class(py_environment.PyEnvironment):
 class Agency_class:
     def __init__(self):
         pass
+class Variable_class:
+    def __init__(self):
+        pass
+    def get_param_names(self): return self.hyper_parameters_names
+    def get_param_cnt(self):   return len(self.hyper_parameters)
 class Config:
     def __init__(self, 
                 lstm_size = [256],

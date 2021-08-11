@@ -6,6 +6,7 @@
 2. shift method ( add or mult(이 경우 log로 관리됨) )
 3. min / max value
 4. hp 랜덤 초기화는 env가 아닌 이것이 관리한다. env에서 호출을 요구한다.
+5. 다만, set_value시점과 같이 Manager에서 set_hyperparameter을 하도록한다.
 5. 현재의 set_value는 optuna검증비교 코드와의 호환을 위해 놔둔다 (min / max value 범주에서 관리)
 6. set_value 대신 shift_value가 사용된다. shift 방식은 전부 이 클래스에서 관리
 7. optopt.Manager에서 observation시 값을 갖고간다. shift method별로 관리되는 방식을 따른다. 
@@ -45,6 +46,8 @@ grad <-> momentum 의 cosnorm은 중요할 것 같긴 하다.
 > * 나머지 함수는 놔두고, apply_gradients에서만 특성 추출을 위한 연산을 추가후 진행한다.
 > * 추가로 변수를 만들지 않을 여지가 있는경우를 고려하여 (ex momentum), lazy 하게 추가 생성(& 관리) 하고 사용
 
+>> momentum이 있으면 제공하고 없으면 포기한다. 또한, 모델이 알아서 어느정도 감안할테니, momentum 변화후 cosnorm한다. 
+
 3. 오히려 metric wrapper에서 묶어주는게 구현상 효율적일수도 있다. (하지만, 중복 계산은 싫다)
 
 설계는 optimzier만 최적화하는게 아니고, 모든 종류의 parameter을 조정하는것을 염두한다. (ex, label smoothing, dropout rate, ...)
@@ -59,4 +62,8 @@ tensorflow keras 구현상 rate 에 tf.Variables를 제공못한다는게 우습
 1. TPU 미작동 원인 찾기
 2. 여유가 된다면, PPO도 실험? 
 
+## 실제 활용시
+------------------------
+1. 신규수집시 마다 1배치 학습
+2. 기본적으로 100회에 random scheduling(dynamic) = 0.44, optuna (static) = 0.426, optopt(dynamic) 는 0.473까지 도달가능이지만, 제시된 구현으로 충분히(?) 0.49~0.50 까지 도달할것임
 

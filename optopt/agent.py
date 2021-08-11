@@ -44,97 +44,6 @@ from tf_agents.specs import distribution_spec
 from tf_agents.specs import tensor_spec
 
 from optopt import network as opt_network
-class IdentityProjectionNetwork(network.DistributionNetwork):
-  def __init__(self
-        , sample_spec
-        , mean_activation_fn = tf.keras.activations.tanh
-        , std_activation_fn = tf.keras.activations.sigmoid
-        , std_scaling = 1. / 16
-        , name='NormalProjectionNetwork'):
-    if len(tf.nest.flatten(sample_spec)) != 1:
-      raise ValueError('Normal Projection network only supports single spec '
-                       'samples.')
-    output_spec = self._output_distribution_spec(sample_spec, name)
-    super(IdentityProjectionNetwork, self).__init__(
-        # We don't need these, but base class requires them.
-        input_tensor_spec=None,
-        state_spec=(),
-        output_spec=output_spec,
-        name=name)
-
-    self._sample_spec = sample_spec
-    self._is_multivariate = sample_spec.shape.ndims > 0
-    self._means_projection_layer = tf.keras.layers.Dense(
-        sample_spec.shape.num_elements(),
-        activation = mean_activation_fn,
-        kernel_initializer=tf.random_normal_initializer(mean=0.0, stddev=0.01),
-        bias_initializer='zeros',
-        name='means_projection_layer')
-
-    self._stddev_projection_layer = tf.keras.layers.Dense(
-        sample_spec.shape.num_elements(),
-        activation=std_activation_fn,
-        kernel_initializer='he_normal',
-        bias_initializer='zeros',
-        name='stddev_projection_layer')
-    self.std_scaling = std_scaling
-  def _output_distribution_spec(self, sample_spec, network_name):
-    is_multivariate = sample_spec.shape.ndims > 0
-    input_param_shapes = (
-        tfp.distributions.Normal.param_static_shapes(sample_spec.shape))
-
-    input_param_spec = {
-        name: tensor_spec.TensorSpec(  # pylint: disable=g-complex-comprehension
-            shape=shape,
-            dtype=sample_spec.dtype,
-            name=network_name + '_' + name)
-        for name, shape in input_param_shapes.items()
-    }
-
-    def distribution_builder(*args, **kwargs):
-      if is_multivariate:
-        # For backwards compatibility, and because MVNDiag does not support
-        # `param_static_shapes`, even when using MVNDiag the spec
-        # continues to use the terms 'loc' and 'scale'.  Here we have to massage
-        # the construction to use 'scale' for kwarg 'scale_diag'.  Since they
-        # have the same shape and dtype expectationts, this is okay.
-        kwargs = kwargs.copy()
-        kwargs['scale_diag'] = kwargs['scale']
-        del kwargs['scale']
-        distribution = tfp.distributions.MultivariateNormalDiag(*args, **kwargs)
-      else:
-        distribution = tfp.distributions.Normal(*args, **kwargs)
-      return distribution
-
-    return distribution_spec.DistributionSpec(
-        distribution_builder, input_param_spec, sample_spec=sample_spec)
-
-  def call(self, inputs, outer_rank, training=False, mask=None):
-    if inputs.dtype != self._sample_spec.dtype:
-      raise ValueError(
-          'Inputs to NormalProjectionNetwork must match the sample_spec.dtype.')
-
-    if mask is not None:
-      raise NotImplementedError(
-          'NormalProjectionNetwork does not yet implement action masking; got '
-          'mask={}'.format(mask))
-
-    # outer_rank is needed because the projection is not done on the raw
-    # observations so getting the outer rank is hard as there is no spec to
-    # compare to.
-    batch_squash = network_utils.BatchSquash(outer_rank)
-    inputs = batch_squash.flatten(inputs)
-
-    means = self._means_projection_layer(inputs, training=training)
-    means = tf.reshape(means, [-1] + self._sample_spec.shape.as_list())
-
-    stds = self._stddev_projection_layer(inputs, training=training) * self.std_scaling
-    stds = tf.cast(stds, self._sample_spec.dtype)
-
-    means = batch_squash.unflatten(means)
-    stds = batch_squash.unflatten(stds)
-
-    return self.output_spec.build_distribution(loc=means, scale=stds), ()
 class Agent(optopt.Agency_class):
     def __init__(self, manager:optopt.Management_class,
                     environment :optopt.Environment_class,
@@ -148,18 +57,6 @@ class Agent(optopt.Agency_class):
         observation_spec, action_spec, time_step_spec = spec_utils.get_tensor_specs(collect_env)
         with self.strategy.scope():
             params = {}
-            """
-            model = tf_agents.networks.actor_distribution_rnn_network.ActorDistributionRnnNetwork(
-                        observation_spec, action_spec, preprocessing_layers=Exp_normalization_layer(clip = 2),
-                        preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1), conv_layer_params=None, input_fc_layer_params=[]
-                        , input_dropout_layer_params=None, lstm_size=[256],
-                        output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
-                        dtype=tf.float32, #discrete_projection_net=_categorical_projection_net,
-                        continuous_projection_net=tanh_normal_projection_network.TanhNormalProjectionNetwork,#(IdentityProjectionNetwork),
-                        rnn_construction_fn=None,
-                        rnn_construction_kwargs={}, name='ActorDistributionRnnNetwork'
-                    )
-            """
             model = opt_network.actor_deterministic_rnn_network(
                         observation_spec, action_spec, preprocessing_layers=opt_network.Exp_normalization_layer(clip = 2),
                         preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),

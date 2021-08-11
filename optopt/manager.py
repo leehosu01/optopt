@@ -24,7 +24,7 @@ class Manager(optopt.Management_class):
 
         self.object_multiplier = {'maximize':1, 'minimize':-1}[direction]
 
-        self.Variables = Variable_definer()
+        self.Variables = env.Variable_definer()
 
         self.objective = objective
         self.using_features = ['progress'] + using_features
@@ -98,7 +98,7 @@ class Manager(optopt.Management_class):
     
     def set_hyperparameters(self):
         action = self.get_action()
-        self.Variables.set_values(action)
+        self.Variables.shift_values(action)
     
     def train_begin(self):
         assert self.compiled
@@ -128,42 +128,6 @@ class Manager(optopt.Management_class):
 
 
 
-class Variable_definer:
-    def __init__(self):
-        self.hyper_parameters = {}
-        self.is_frozen = False
-    def freeze(self):
-        self.is_frozen = True
-        self.hyper_parameters_names = sorted(list(self.hyper_parameters.keys()))
-        self.hyper_parameters = [self.hyper_parameters[K] for K in self.hyper_parameters_names]
-    def set_function(self, name, func):
-        assert not self.is_frozen
-        default_value = func(0.5)
-        tfv = tf.Variable(default_value, trainable=False)
-        if name in self.hyper_parameters:
-            warnings.warn(f"{name} is duplicated, check configration. We apply only first setting.", UserWarning)
-        else: self.hyper_parameters[name] = [tfv, func]
-        return tfv
-    def loguniform(self, name :str , min_v :float, max_v :float, post_processing :Callable = (lambda X:X)):
-        assert not self.is_frozen
-        assert 0 < min_v < max_v
-        min_lv, max_lv = math.log(min_v), math.log(max_v)
-        return self.set_function(name, lambda rate: post_processing(math.exp( (max_lv - min_lv) * rate + min_lv )))
-    def uniform(self, name :str , min_v :float = 0., max_v :float = 1., post_processing :Callable = (lambda X:X)):
-        assert not self.is_frozen
-        assert min_v < max_v
-        return self.set_function(name, lambda rate: post_processing( (max_v - min_v) * rate + min_v ))
-    def custom(self, name, func):
-        assert not self.is_frozen
-        return self.set_function(name, func)
-    def get_param_names(self): return self.hyper_parameters_names
-    def get_param_cnt(self):   return len(self.hyper_parameters)
-    def set_values(self, values : list):
-        assert self.is_frozen
-        assert len(values) == self.get_param_cnt()
-        for [V, func], new_V in zip(self.hyper_parameters, values):
-            V.assign(func(new_V))
-        
 class simple_callback(tf.keras.callbacks.Callback):
     def __init__(self, parent_callback : Manager, using_features, objective):
         self.parent_callback = parent_callback
