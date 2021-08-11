@@ -206,102 +206,104 @@ class Agent(optopt.Agency_class):
 
     def prepare(self):
         self.reach_prepare = True
-        collect_env = self.env
-        tf_agent = self.tf_agent
-        train_step = self.train_step
+        with self.strategy.scope():
+            collect_env = self.env
+            tf_agent = self.tf_agent
+            train_step = self.train_step
 
-        table_name = 'uniform_table'
-        table = reverb.Table(
-            table_name,
-            max_size=self.config.replay_buffer_capacity,
-            sampler=reverb.selectors.Uniform(),
-            remover=reverb.selectors.Fifo(),
-            rate_limiter=reverb.rate_limiters.MinSize(1))
+            table_name = 'uniform_table'
+            table = reverb.Table(
+                table_name,
+                max_size=self.config.replay_buffer_capacity,
+                sampler=reverb.selectors.Uniform(),
+                remover=reverb.selectors.Fifo(),
+                rate_limiter=reverb.rate_limiters.MinSize(1))
 
-        reverb_server = reverb.Server([table])
-        reverb_replay = reverb_replay_buffer.ReverbReplayBuffer(
-                            tf_agent.collect_data_spec,
-                            sequence_length=self.config.sequence_length,
-                            table_name=table_name,
-                            local_server=reverb_server)
-        dataset = reverb_replay.as_dataset(
-            sample_batch_size=self.config.train_batch_size,
-            num_steps=self.config.sequence_length,
-            num_parallel_calls = 2, ).prefetch(32)
-        _experience_dataset_fn = lambda: dataset
-        def experience_dataset_fn():
-            print('start training')
-            return _experience_dataset_fn()
-        
-        tf_collect_policy = tf_agent.collect_policy
-        collect_policy = py_tf_eager_policy.PyTFEagerPolicy(
-                            tf_collect_policy, use_tf_function=True)
-        random_policy = random_py_policy.RandomPyPolicy(
-                            collect_env.time_step_spec(), collect_env.action_spec())
-        
+            reverb_server = reverb.Server([table])
+            reverb_replay = reverb_replay_buffer.ReverbReplayBuffer(
+                                tf_agent.collect_data_spec,
+                                sequence_length=self.config.sequence_length,
+                                table_name=table_name,
+                                local_server=reverb_server)
+            dataset = reverb_replay.as_dataset(
+                sample_batch_size=self.config.train_batch_size,
+                num_steps=self.config.sequence_length,
+                num_parallel_calls = 2, ).prefetch(32)
+            _experience_dataset_fn = lambda: dataset
+            def experience_dataset_fn():
+                print('start training')
+                return _experience_dataset_fn()
+            
+            tf_collect_policy = tf_agent.collect_policy
+            collect_policy = py_tf_eager_policy.PyTFEagerPolicy(
+                                tf_collect_policy, use_tf_function=True)
+            random_policy = random_py_policy.RandomPyPolicy(
+                                collect_env.time_step_spec(), collect_env.action_spec())
+            
 
-        params = {'pad_end_of_episodes': True} if tf_agents.__version__ >= '0.8.0' else {}
-        rb_observer = reverb_utils.ReverbAddTrajectoryObserver(
-                            reverb_replay.py_client,
-                            table_name,
-                            sequence_length=self.config.sequence_length,
-                            stride_length=1, **params)
-        if self.config.collect_episodes_for_env_testing:
-            self.initial_collect_actor = actor.Actor(
-                            collect_env,
-                            random_policy,
-                            train_step,
-                            episodes_per_run=self.config.collect_episodes_for_env_testing,
-                            observers=[rb_observer])
-                            
-        env_step_metric = py_metrics.EnvironmentSteps()
-        self.collect_actor = collect_actor = actor.Actor(
-                            collect_env,
-                            collect_policy,
-                            train_step,
-                            episodes_per_run=self.config.collect_episodes_for_training,
-                            metrics=actor.collect_metrics(10),
-                            summary_dir=os.path.join(self.config.savedir, learner.TRAIN_DIR),
-                            observers=[rb_observer, env_step_metric])
-                            
-        saved_model_dir = os.path.join(self.config.savedir, learner.POLICY_SAVED_MODEL_DIR)
+            params = {'pad_end_of_episodes': True} if tf_agents.__version__ >= '0.8.0' else {}
+            rb_observer = reverb_utils.ReverbAddTrajectoryObserver(
+                                reverb_replay.py_client,
+                                table_name,
+                                sequence_length=self.config.sequence_length,
+                                stride_length=1, **params)
+            if self.config.collect_episodes_for_env_testing:
+                self.initial_collect_actor = actor.Actor(
+                                collect_env,
+                                random_policy,
+                                train_step,
+                                episodes_per_run=self.config.collect_episodes_for_env_testing,
+                                observers=[rb_observer])
+                                
+            env_step_metric = py_metrics.EnvironmentSteps()
+            self.collect_actor = collect_actor = actor.Actor(
+                                collect_env,
+                                collect_policy,
+                                train_step,
+                                episodes_per_run=self.config.collect_episodes_for_training,
+                                metrics=actor.collect_metrics(10),
+                                summary_dir=os.path.join(self.config.savedir, learner.TRAIN_DIR),
+                                observers=[rb_observer, env_step_metric])
+                                
+            saved_model_dir = os.path.join(self.config.savedir, learner.POLICY_SAVED_MODEL_DIR)
 
-        # Triggers to save the agent's policy checkpoints.
-        learning_triggers = [
-            triggers.PolicySavedModelTrigger(
-                saved_model_dir,
-                tf_agent,
-                train_step,
-                interval=self.config.policy_save_interval),
-            triggers.StepPerSecondLogTrigger(train_step, interval=1000),
-        ]
+            # Triggers to save the agent's policy checkpoints.
+            learning_triggers = [
+                triggers.PolicySavedModelTrigger(
+                    saved_model_dir,
+                    tf_agent,
+                    train_step,
+                    interval=self.config.policy_save_interval),
+                triggers.StepPerSecondLogTrigger(train_step, interval=1000),
+            ]
 
-        self.agent_learner = agent_learner = learner.Learner(
-                self.config.savedir,
-                train_step,
-                tf_agent,
-                experience_dataset_fn,
-                triggers=learning_triggers,
-                strategy = self.strategy)
-        # Reset the train step
-        self.tf_agent.train_step_counter.assign(0)
-        self.history = []
-        self.finish_prepare = True
+            self.agent_learner = agent_learner = learner.Learner(
+                    self.config.savedir,
+                    train_step,
+                    tf_agent,
+                    experience_dataset_fn,
+                    triggers=learning_triggers,
+                    strategy = self.strategy)
+            # Reset the train step
+            self.tf_agent.train_step_counter.assign(0)
+            self.history = []
+            self.finish_prepare = True
     def start(self):
         assert self.reach_prepare
         assert self.finish_prepare
-        try: self.initial_collect_actor.run()
-        except: pass
-        self.reach_start = True
-        episode = 0  
-        while 1:
-            # Training.
-            self.collect_actor.run()
-            loss_info = self.agent_learner.run(iterations=self.config.train_iterations)
-            self.history.append(loss_info.loss.numpy())
-            episode += 1
-            if self.config.verbose and episode % self.config.verbose == 0:
-                print(np.mean(self.history[-self.config.verbose]))
+        with self.strategy.scope():
+            try: self.initial_collect_actor.run()
+            except: pass
+            self.reach_start = True
+            episode = 0  
+            while 1:
+                # Training.
+                self.collect_actor.run()
+                loss_info = self.agent_learner.run(iterations=self.config.train_iterations)
+                self.history.append(loss_info.loss.numpy())
+                episode += 1
+                if self.config.verbose and episode % self.config.verbose == 0:
+                    print(np.mean(self.history[-self.config.verbose]))
     def finish(self):
         self.rb_observer.close()
         self.reverb_server.stop()
