@@ -164,7 +164,7 @@ class Agent(optopt.Agency_class):
                         observation_spec, action_spec, preprocessing_layers=opt_network.Exp_normalization_layer(clip = 2),
                         preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
                         input_fc_layer_params=[], input_dropout_layer_params=None,
-                        lstm_size=[512],
+                        lstm_size=[256],
                         output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
                         dtype=tf.float32)
             params['actor_network'] = model
@@ -173,7 +173,7 @@ class Agent(optopt.Agency_class):
                         (observation_spec, action_spec), preprocessing_layers=(opt_network.Exp_normalization_layer(clip = 2), tf.keras.layers.Lambda(lambda X:X)),
                         preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
                         conv_layer_params=None, input_fc_layer_params=[],
-                        input_dropout_layer_params=None, lstm_size=[512], output_fc_layer_params=[],
+                        input_dropout_layer_params=None, lstm_size=[256], output_fc_layer_params=[],
                         activation_fn=tf.keras.activations.relu, dtype=tf.float32,
                         name='ValueRnnNetwork'
                     )
@@ -227,8 +227,7 @@ class Agent(optopt.Agency_class):
                                 local_server=reverb_server)
             dataset = reverb_replay.as_dataset(
                 sample_batch_size=self.config.train_batch_size,
-                num_steps=self.config.sequence_length,
-                num_parallel_calls = 2, ).prefetch(32)
+                num_steps=self.config.sequence_length )
             _experience_dataset_fn = lambda: dataset
             def experience_dataset_fn():
                 print('start training')
@@ -299,9 +298,10 @@ class Agent(optopt.Agency_class):
             while 1:
                 # Training.
                 self.collect_actor.run()
-                loss_info = self.agent_learner.run(iterations=self.config.train_iterations)
-                self.history.append(loss_info.loss.numpy())
                 episode += 1
+
+                loss_info = self.agent_learner.run(iterations=int((episode ** 0.5) * self.config.train_iterations) )
+                self.history.append(loss_info.loss.numpy())
                 if self.config.verbose and episode % self.config.verbose == 0:
                     print(np.mean(self.history[-self.config.verbose]))
     def finish(self):
