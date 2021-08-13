@@ -13,7 +13,7 @@ def devprint(*args, **kwargs): pass
 class Manager(optopt.Management_class):
     def __init__(self, objective : str = 'val_acc',
                         direction = 'maximize', 
-                        config : optopt.Config = optopt.Config()):
+                        config : optopt.Config = None)):
                         
         assert direction in ['maximize', 'minimize']
 
@@ -24,7 +24,7 @@ class Manager(optopt.Management_class):
         self.Variables = env.Variable_definer()
 
         self.objective = objective
-        self.config = config
+        self.config = config or optopt.Config()
         self.compiled = False
     def compile(self, using_features:List[str]):
         assert not self.compiled

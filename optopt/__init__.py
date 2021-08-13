@@ -25,8 +25,9 @@ class Metric_wrapper:
             except:
                 self.MW_metrics = {}
                 MWM = self.MW_metrics.get(name, None)
-            if MWM is None: WMW = Exp_moving_mean_metric(momentum, name = name)
-            WMW.update_state(value)
+            if MWM is None:
+                MWM = self.MW_metrics[name] = Exp_moving_mean_metric(momentum, name = name)
+            MWM.update_state(value)
         if type(momentum) == float: _sub(name, value, momentum)
         else:
             momentums = momentum
@@ -97,7 +98,6 @@ class Config:
     def __init__(self, 
                 action_first_epochs = True,
                 provide_hyperparameter_info = False,
-                #info_dropout = 0.,
 
                 lstm_size = [256],
                 replay_buffer_capacity = 10000,
