@@ -68,7 +68,7 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
                         name=None,
                         experimental_aggregate_gradients=True):
         def cosnorm(X, Y):
-            return tf.reduce_mean(X * Y) / (tf.norm(X, 2) * tf.norm(Y, 2) + 1e-9)
+            return tf.reduce_sum(X * Y) / (tf.norm(X, 2) * tf.norm(Y, 2) + 1e-9)
         vars_copy = [tf.identity(vars) for _, vars in grads_and_vars]
         RET = self.sub_optimizer.apply_gradients(
                         grads_and_vars = grads_and_vars,
