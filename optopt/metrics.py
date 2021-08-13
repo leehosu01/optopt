@@ -73,8 +73,8 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
             except: warning.warn(f"optimizer do not have 'm' (a.k.a momentum) for variable name {var.name}", UserWarning)
             try: variance = self.sub_optimizer.get_slot(vars, self.variance_slot_name)
             except: warning.warn(f"optimizer do not have 'v' (a.k.a variance) for variable name {var.name}", UserWarning)
-            old_vars.assign_sub(vars)
-            old_vars  *= -1
+            old_vars *= -1
+            old_vars += vars
             update = old_vars
             del old_vars
             try: # inner feature 2
