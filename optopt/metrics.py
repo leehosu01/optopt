@@ -4,7 +4,7 @@ import optopt
 from typing import List, Union
 
 class weight_metrics_wrapper(tf.keras.models.Model, optopt.Metric_wrapper):
-    def __init__(self, model:tf.keras.models.Model, exp_momentum : Union[float, List[float]]):
+    def __init__(self, model:tf.keras.models.Model, exp_momentum : Union[float, List[float]] = [0.9, 0.95, 0.99]):
         super(weight_metrics_wrapper, self).__init__()
         self.sub_model = model
         self.exp_momentum = exp_momentum
@@ -55,7 +55,7 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
         self.variance_slot_name = variance_slot_name
         self.eps_control_as_adabelief = eps_control_as_adabelief
         self.exp_momentum = exp_momentum
-        super(optimizer_metrics_wrapper, self).__init__()
+        super(optimizer_metrics_wrapper, self).__init__(name = 'Optimizer_metrics_wrapper')
     def apply_gradients(self,
                         grads_and_vars,
                         name=None,
