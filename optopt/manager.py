@@ -50,7 +50,10 @@ class Manager(optopt.Management_class):
         self.in_features = len(self.using_features)
         self.out_features = self.Variables.get_param_cnt()
 
-        self.env = env.Env(self, self.in_features, self.out_features, config = self.config)
+        self.env = env.Env(self,
+                                in_feature_cnt = self.in_features, 
+                                Variable_definer = self.Variables,
+                                config = self.config)
         
         self.agent = agent.Agent(self, self.env, config = self.config)
         self.agent_started = False

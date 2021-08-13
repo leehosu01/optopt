@@ -31,12 +31,12 @@ import optopt
 from typing import Tuple, List, Union, Callable
 
 class Env(optopt.Environment_class):
-  def __init__(self, manager :optopt.Management_class, feature_cnt, Variable_definer:optopt.Variable_class, config : optopt.Config):
+  def __init__(self, manager :optopt.Management_class, in_feature_cnt, Variable_definer:optopt.Variable_class, config : optopt.Config):
     self.Variables = Variable_definer
     self._action_spec = array_spec.BoundedArraySpec(
         shape=(self.Variables.get_param_cnt(), ), dtype=np.float32, minimum=0, maximum=1, name='action')
     self._observation_spec = array_spec.BoundedArraySpec(
-        shape=(feature_cnt, ), dtype=np.float32, name='observation')
+        shape=(in_feature_cnt, ), dtype=np.float32, name='observation')
     self._state = 0
     self._episode_ended = False
     self.manager = manager
