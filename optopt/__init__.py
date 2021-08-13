@@ -103,7 +103,7 @@ class Config:
     def __init__(self, 
                 action_first_epochs = True,
                 provide_hyperparameter_info = False,
-                info_dropout = 0.,
+                #info_dropout = 0.,
 
                 lstm_size = [256],
                 replay_buffer_capacity = 10000,
@@ -129,7 +129,7 @@ class Config:
             warnings.warn(f"action_first_epochs = {action_first_epochs}, they act without information", UserWarning)
         self.action_first_epochs = action_first_epochs
         self.provide_hyperparameter_info = provide_hyperparameter_info
-        self.info_dropout = info_dropout
+        #self.info_dropout = info_dropout
 
         self.lstm_size = lstm_size
         self.replay_buffer_capacity = replay_buffer_capacity

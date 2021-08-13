@@ -11,27 +11,29 @@ from typing import Callable
 do_not_provide_feature_name = ['progress', 'objective']
 def devprint(*args, **kwargs): pass
 class Manager(optopt.Management_class):
-    def __init__(self, using_features:List[str],
-                        objective : str = 'val_acc',
+    def __init__(self, objective : str = 'val_acc',
                         direction = 'maximize', 
                         config : optopt.Config = optopt.Config()):
                         
         assert direction in ['maximize', 'minimize']
 
         assert objective not in do_not_provide_feature_name and f"do not use feature name as `{objective}` "
-        for I in using_features:
-            assert I not in do_not_provide_feature_name and f"do not use feature name as `{I}` "
 
         self.object_multiplier = {'maximize':1, 'minimize':-1}[direction]
 
         self.Variables = env.Variable_definer()
 
         self.objective = objective
-        self.using_features = ['progress'] + using_features
         self.config = config
         self.compiled = False
-    def compile(self):
+    def compile(self, using_features:List[str]):
         assert not self.compiled
+
+
+        for I in using_features:
+            assert I not in do_not_provide_feature_name and f"do not use feature name as `{I}` "
+        self.using_features = ['progress'] + using_features
+
         self.set_observation_lock = threading.Lock()
         self.get_observation_lock = threading.Lock()
         self.get_observation_lock.acquire()
@@ -86,7 +88,7 @@ class Manager(optopt.Management_class):
         self.action_queue.put(action)
         devprint("set_action3", self.action_queue.qsize())
         self.get_action_lock.release()
-        
+
     def get_action(self):
         self.get_action_lock.acquire()
         devprint("get_action1", self.set_action_lock.locked())
