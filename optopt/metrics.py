@@ -8,6 +8,11 @@ class weight_metrics_wrapper(tf.keras.models.Model, optopt.Metric_wrapper):
         super(weight_metrics_wrapper, self).__init__()
         self.sub_model = model
         self.exp_momentum = exp_momentum
+        self.set_weights = model.set_weights
+        self.get_weights = model.get_weights
+        self.get_layer = model.get_layer
+        self.load_weights = model.load_weights
+        self.summary = model.summary
     def build(self, *args, **kwargs):
         self.metric_requires = []
         name_set = {}
@@ -51,6 +56,8 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
         self._prepare_local = sub_optimizer._prepare_local
         self._resource_apply_dense = sub_optimizer._resource_apply_dense
         self._resource_apply_sparse = sub_optimizer._resource_apply_sparse
+        self.set_weights = sub_optimizer.set_weights
+        self.get_weights = sub_optimizer.get_weights
         self.momentum_slot_name = momentum_slot_name
         self.variance_slot_name = variance_slot_name
         self.eps_control_as_adabelief = eps_control_as_adabelief
