@@ -13,7 +13,7 @@ def devprint(*args, **kwargs): pass
 class Manager(optopt.Management_class):
     def __init__(self, objective : str = 'val_acc',
                         direction = 'maximize', 
-                        config : optopt.Config = None)):
+                        config : optopt.Config = None):
                         
         assert direction in ['maximize', 'minimize']
 
