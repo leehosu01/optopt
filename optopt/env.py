@@ -104,21 +104,24 @@ class Variable_definer(optopt.Variable_class):
         self.hyper_parameters = [self.hyper_parameters[K] for K in self.hyper_parameters_name]
     def initialize_values(self):
         assert self.is_frozen
-        for tfv, init_f, _, _ in self.hyper_parameters:
-            tfv.assign(init_f())
+        for FV, BV, proj, init_f, _, _ in self.hyper_parameters:
+            BV.assign(init_f())
+            FV.assign(proj(BV))
     def shift_values(self, values : Union[list, np.ndarray]):
         assert self.is_frozen
         assert len(values) == self.get_param_cnt()
-        for [V, _, func, _], v2 in zip(self.hyper_parameters, values):
-            V.assign(func(v2))
+        for [FV, BV, proj, _, func, _], v2 in zip(self.hyper_parameters, values):
+            BV.assign(func(v2))
+            FV.assign(proj(BV))
     def get_values(self):
         assert self.is_frozen
-        return [V.value().numpy() for V, _, _, _ in self.hyper_parameters]
+        return [BV.value().numpy() for FV, BV, proj, _, _, _ in self.hyper_parameters]
     def set_values(self, values : Union[list, np.ndarray]):
         assert self.is_frozen
         assert len(values) == self.get_param_cnt()
-        for [V, _, _, func], v2 in zip(self.hyper_parameters, values):
-            V.assign(func(v2))
+        for [FV, BV, proj, _, _, func], v2 in zip(self.hyper_parameters, values):
+            BV.assign(func(v2))
+            FV.assign(proj(BV))
     def uniform(self, name :str, init_v : Union[float, Tuple[float], List[float]],
                                  shift_v : Union[float, Tuple[float], List[float]] = [-.1, .1],
                                  min_v : float = None, max_v : float = None, 
@@ -136,13 +139,15 @@ class Variable_definer(optopt.Variable_class):
             warnings.warn(f"{name} is duplicated, check configration. We apply only first setting.", UserWarning)
         
         projector = (lambda X:post_processing(X))
-        tf_Value = tf.Variable(init_min, trainable=False)
-        init_function = (lambda : projector(interpolation(random.random(), min_v, max_v)))
-        shift_function= (lambda R: projector(np.clip( tf_Value + interpolation(R, shift_min, shift_max) , min_v, max_v) ))
-        compat_function= (lambda R: projector(interpolation(R, min_v, max_v) ))
-        self.hyper_parameters[name] = [tf_Value, init_function, shift_function, compat_function]
+        tf_backend_Value = tf.Variable(init_min, trainable=False)
+        init_function = (lambda : (interpolation(random.random(), min_v, max_v)))
+        shift_function= (lambda R: (np.clip( tf_backend_Value + interpolation(R, shift_min, shift_max) , min_v, max_v) ))
+        compat_function= (lambda R: (interpolation(R, min_v, max_v) ))
+        tf_frontend_Value = tf.Variable(projector(tf_backend_Value), trainable=False)
+        self.hyper_parameters[name] = [tf_frontend_Value, tf_backend_Value, projector, init_function, shift_function, compat_function]
 
-        return tf_Value
+
+        return tf_frontend_Value
     def loguniform(self, name :str, init_v : Union[float, Tuple[float], List[float]],
                                  shift_v : Union[float, Tuple[float], List[float]] = [.5, 2.],
                                  min_v : float = None, max_v : float = None,
@@ -166,10 +171,11 @@ class Variable_definer(optopt.Variable_class):
         min_v = math.log(min_v)
         max_v = math.log(max_v)
         projector = (lambda X:post_processing(math.exp(X)))
-        tf_Value = tf.Variable(init_min, trainable=False)
-        init_function = (lambda : projector(interpolation(random.random(), min_v, max_v)))
-        shift_function= (lambda R: projector(np.clip( tf_Value + interpolation(R, shift_min, shift_max) , min_v, max_v) ))
-        compat_function= (lambda R: projector(interpolation(R, min_v, max_v) ))
-        self.hyper_parameters[name] = [tf_Value, init_function, shift_function, compat_function]
+        tf_backend_Value = tf.Variable(init_min, trainable=False)
+        init_function = (lambda : (interpolation(random.random(), min_v, max_v)))
+        shift_function= (lambda R: (np.clip( tf_backend_Value + interpolation(R, shift_min, shift_max) , min_v, max_v) ))
+        compat_function= (lambda R: (interpolation(R, min_v, max_v) ))
+        tf_frontend_Value = tf.Variable(projector(tf_backend_Value), trainable=False)
+        self.hyper_parameters[name] = [tf_frontend_Value, tf_backend_Value, projector, init_function, shift_function, compat_function]
 
-        return tf_Value
+        return tf_frontend_Value
