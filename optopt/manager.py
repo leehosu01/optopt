@@ -33,6 +33,8 @@ class Manager(optopt.Management_class):
         for I in using_features:
             assert I not in do_not_provide_feature_name and f"do not use feature name as `{I}` "
         self.using_features = ['progress'] + using_features
+        if self.config.provide_hyperparameter_info:
+            self.using_features += self.Variables.get_param_names()
 
         self.set_observation_lock = threading.Lock()
         self.get_observation_lock = threading.Lock()
@@ -138,7 +140,7 @@ class Manager(optopt.Management_class):
 
 
 class simple_callback(tf.keras.callbacks.Callback):
-    def __init__(self, parent_callback : Manager, using_features, objective, get_additional_metrics: List[optopt.Metric_wrapper] = []):
+    def __init__(self, parent_callback : Manager, using_features, objective, get_additional_metrics: List[optopt.Metric_wrapper] = None):
         self.parent_callback = parent_callback
         self.using_features = using_features
         self.objective = objective

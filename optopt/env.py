@@ -80,7 +80,7 @@ class Env(optopt.Environment_class):
     #print("ENV._step => call set_action", action)
     self.manager.set_action(action)
     #print("ENV._step <= return set_action")
-    self.last_observation = Obs, Rew, self._episode_ended, step_type = self.manager.get_observation()
+    self.last_observation = Obs, Rew, self._episode_ended = self.manager.get_observation()
 
     if self._episode_ended:
       self.wait_reset = True
