@@ -19,11 +19,12 @@ class Variable_class:
     def get_param_names(self): return self.hyper_parameters_names
     def get_param_cnt(self):   return len(self.hyper_parameters)
 class Metric_wrapper:
-    def __init__(self):
-        self.MW_metrics = {}
     def update_metric(self, name, value, momentum:Union[float, List]):
         def _sub(name, value, momentum):
-            MWM = self.MW_metrics.get(name, None)
+            try:MWM = self.MW_metrics.get(name, None)
+            except:
+                self.MW_metrics = {}
+                MWM = self.MW_metrics.get(name, None)
             if MWM is None: WMW = Exp_moving_mean_metric(momentum, name = name)
             WMW.update_state(value)
         if type(momentum) == float: _sub(name, value, momentum)
@@ -43,18 +44,15 @@ class Exp_moving_mean_metric(tf.keras.metrics.Metric):
       self.momentum = self.add_weight(name = "moving", 
                                   shape = (), 
                                   initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
+                                  dtype = tf.float32, )
       self.run_count = self.add_weight(name = "run_count", 
                                   shape = (), 
                                   initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
+                                  dtype = tf.float32, )
       self.exp_moving_mean = self.add_weight("exp_moving_mean",
                                   shape=(), 
                                   initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
+                                  dtype = tf.float32, )
       self.moving = moving
 
   def update_state(self, value, *args, **kwargs):
@@ -70,23 +68,19 @@ class Exp_moving_std_metric(tf.keras.metrics.Metric):
       self.momentum = self.add_weight(name = "moving", 
                                   shape = (), 
                                   initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
+                                  dtype = tf.float32, )
       self.run_count = self.add_weight(name = "run_count", 
                                   shape = (), 
                                   initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
+                                  dtype = tf.float32, )
       self.exp_moving_mean = self.add_weight("exp_moving_mean",
                                   shape=(), 
                                   initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
+                                  dtype = tf.float32, )
       self.exp_moving_var = self.add_weight("exp_moving_var",
                                   shape=(), 
                                   initializer = 'ones',
-                                  dtype = tf.float32, 
-                                  trainable = False)
+                                  dtype = tf.float32, )
       self.moving = moving
 
   def update_state(self, value, *args, **kwargs):
