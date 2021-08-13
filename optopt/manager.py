@@ -36,7 +36,8 @@ class Manager(optopt.Management_class):
         self.using_features = ['progress'] + using_features
         if self.config.provide_hyperparameter_info:
             self.using_features += self.Variables.get_param_names()
-
+        self.using_features = sorted(self.using_features)
+        
         self.set_observation_lock = threading.Lock()
         self.get_observation_lock = threading.Lock()
         self.get_observation_lock.acquire()

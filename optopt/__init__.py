@@ -32,7 +32,7 @@ class Metric_wrapper:
         else:
             momentums = momentum
             for momentum in momentums:
-                _name = f"{name}_{momentum}"
+                _name = f"{name}/{momentum}"
                 _sub(_name, value, momentum)
 
     def get_metrics(self):
