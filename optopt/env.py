@@ -55,8 +55,9 @@ class Env(optopt.Environment_class):
   def cast(self, *args):
     return [np.asarray(I, dtype = self.config.dtype) for I in args]
   def _reset(self):
-    self.Variables.initialize_values()
     self.steps = 0
+    if self.wait_reset:
+      self.manager.set_action(None)
     self.last_observation = RET = self.manager.get_observation() if not self.is_reset or self.wait_reset else self.last_observation
     if not self.wait_reset:
       print("ABNORMAL! reset with self.wait_reset == ", self.wait_reset)

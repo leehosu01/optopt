@@ -104,7 +104,8 @@ class Manager(optopt.Management_class):
     
     def set_hyperparameters(self):
         action = self.get_action()
-        self.Variables.shift_values(action)
+        if action is None: self.Variables.initialize_values()
+        else: self.Variables.shift_values(action)
     
     def train_begin(self):
         assert self.compiled
@@ -120,8 +121,7 @@ class Manager(optopt.Management_class):
                 agent.start()
             self.agent_thread = threading.Thread(target = agent_processing, args = (self.agent, ))
             self.agent_thread.start()
-        if self.config.action_first_epochs:
-            self.set_hyperparameters()
+        self.set_hyperparameters()
 
     def epoch_end(self, obs_info, obj, done):
         assert self.compiled
