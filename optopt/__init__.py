@@ -38,7 +38,7 @@ class Metric_wrapper:
     def get_metrics(self):
         return {K:V.result().numpy() for K, V in self.MW_metrics.items()}
     def get_metrics_names(self):
-        return [I['name'] for I in self.get_metrics()]
+        return list(self.get_metrics().keys())
 class Exp_moving_mean_metric(tf.keras.metrics.Metric):
   def __init__(self, moving = 0.995, name='exp_normalization_metric'):
       super(Exp_moving_mean_metric, self).__init__(name=name)
