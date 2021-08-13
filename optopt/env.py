@@ -100,8 +100,8 @@ class Variable_definer(optopt.Variable_class):
         self.is_frozen = False
     def freeze(self):
         self.is_frozen = True
-        self.hyper_parameters_names = sorted(list(self.hyper_parameters.keys()))
-        self.hyper_parameters = [self.hyper_parameters[K] for K in self.hyper_parameters_names]
+        self.hyper_parameters_name = sorted(list(self.hyper_parameters.keys()))
+        self.hyper_parameters = [self.hyper_parameters[K] for K in self.hyper_parameters_name]
     def initialize_values(self):
         assert self.is_frozen
         for tfv, init_f, _, _ in self.hyper_parameters:

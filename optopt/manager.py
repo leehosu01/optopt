@@ -29,7 +29,8 @@ class Manager(optopt.Management_class):
     def compile(self, using_features:List[str]):
         assert not self.compiled
 
-
+        self.Variables.freeze()
+        
         for I in using_features:
             assert I not in do_not_provide_feature_name and f"do not use feature name as `{I}` "
         self.using_features = ['progress'] + using_features
@@ -46,8 +47,6 @@ class Manager(optopt.Management_class):
         
         self.observation_queue = Queue(2)
         self.action_queue = Queue(2)
-
-        self.Variables.freeze()
 
         self.in_features = len(self.using_features)
         self.out_features = self.Variables.get_param_cnt()

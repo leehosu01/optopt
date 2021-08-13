@@ -16,7 +16,7 @@ class Agency_class:
 class Variable_class:
     def __init__(self):
         pass
-    def get_param_names(self): return self.hyper_parameters_names
+    def get_param_names(self): return self.hyper_parameters_name
     def get_param_cnt(self):   return len(self.hyper_parameters)
 class Metric_wrapper:
     def update_metric(self, name, value, momentum:Union[float, List]):
