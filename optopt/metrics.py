@@ -67,7 +67,8 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
                         grads_and_vars,
                         name=None,
                         experimental_aggregate_gradients=True):
-        def cosnorm(X, Y): return tf.reduce_mean(X * Y) / (tf.norm(X, 2) ** 0.5 * tf.norm(Y, 2) ** 0.5 + 1e-9)
+        def cosnorm(X, Y):
+            return tf.reduce_mean(X * Y) / (tf.norm(X, 2) * tf.norm(Y, 2) + 1e-9)
         vars_copy = [tf.identity(vars) for _, vars in grads_and_vars]
         RET = self.sub_optimizer.apply_gradients(
                         grads_and_vars = grads_and_vars,
@@ -87,30 +88,30 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
             try: # inner feature 2
                 if self.eps_control_as_adabelief:
                     std_not_less_than_eps = 1. - tf.reduce_mean( tf.less((variance - epsilon) ** 0.5, epsilon) )
-                    self.update_metric(f'std_not_less_than_eps_{vars.name}', std_not_less_than_eps, self.exp_momentum)
+                    self.update_metric(f'std_not_less_than_eps/{vars.name}', std_not_less_than_eps, self.exp_momentum)
                 else:
                     std_not_less_than_eps = 1. - tf.reduce_mean( tf.less(variance ** 0.5, epsilon) )
-                    self.update_metric(f'std_not_less_than_eps_{vars.name}', std_not_less_than_eps, self.exp_momentum)
+                    self.update_metric(f'std_not_less_than_eps/{vars.name}', std_not_less_than_eps, self.exp_momentum)
             except: pass 
             try: # inner feature 3
                 # what is pre-LR?? 모르니까 그냥 평균 업데이트 취급함.
                 Average_per_parameter_update_magnitude = tf.reduce_mean(update)
-                self.update_metric(f'Average_per_parameter_update_magnitude_{vars.name}', Average_per_parameter_update_magnitude, self.exp_momentum)
+                self.update_metric(f'Average_per_parameter_update_magnitude/{vars.name}', Average_per_parameter_update_magnitude, self.exp_momentum)
             except: pass 
             try: # inner feature 5
                 Log_ratio_of_update_norm_and_parameter_norm = tf.math.log(tf.norm(update, 2) / ( 1e-9 + tf.norm(vars, 2)))
-                self.update_metric(f'Log_ratio_of_update_norm_and_parameter_norm_{vars.name}', Log_ratio_of_update_norm_and_parameter_norm, self.exp_momentum)
+                self.update_metric(f'Log_ratio_of_update_norm_and_parameter_norm/{vars.name}', Log_ratio_of_update_norm_and_parameter_norm, self.exp_momentum)
             except: pass 
             try: # inner feature 8
                 Cosine_similarity_of_gradient_and_momentum = cosnorm(grad, momentum)
-                self.update_metric(f'Cosine_similarity_of_gradient_and_momentum_{vars.name}', Cosine_similarity_of_gradient_and_momentum, self.exp_momentum)
+                self.update_metric(f'Cosine_similarity_of_gradient_and_momentum/{vars.name}', Cosine_similarity_of_gradient_and_momentum, self.exp_momentum)
             except: pass 
             try: # inner feature 10
                 Cosine_similarity_of_gradient_and_update = cosnorm(grad, update)
-                self.update_metric(f'Cosine_similarity_of_gradient_and_update_{vars.name}', Cosine_similarity_of_gradient_and_update, self.exp_momentum)
+                self.update_metric(f'Cosine_similarity_of_gradient_and_update/{vars.name}', Cosine_similarity_of_gradient_and_update, self.exp_momentum)
             except: pass 
             try: # inner feature 12
                 Cosine_similarity_of_gradient_and_parameter = cosnorm(grad, vars)
-                self.update_metric(f'Cosine_similarity_of_gradient_and_parameter_{vars.name}', Cosine_similarity_of_gradient_and_parameter, self.exp_momentum)
+                self.update_metric(f'Cosine_similarity_of_gradient_and_parameter/{vars.name}', Cosine_similarity_of_gradient_and_parameter, self.exp_momentum)
             except: pass 
         return RET
