@@ -170,7 +170,7 @@ class Variable_definer(optopt.Variable_class):
         shift_max = math.log(shift_max)
         min_v = math.log(min_v)
         max_v = math.log(max_v)
-        projector = (lambda X:post_processing(math.exp(X)))
+        projector = (lambda X:post_processing(tf.exp(X)))
         tf_backend_Value = tf.Variable(init_min, trainable=False)
         init_function = (lambda : (interpolation(random.random(), min_v, max_v)))
         shift_function= (lambda R: (np.clip( tf_backend_Value + interpolation(R, shift_min, shift_max) , min_v, max_v) ))
