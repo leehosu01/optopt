@@ -37,7 +37,7 @@ class Manager(optopt.Management_class):
         if self.config.provide_hyperparameter_info:
             self.using_features += self.Variables.get_param_names()
         self.using_features = sorted(self.using_features)
-        
+
         self.set_observation_lock = threading.Lock()
         self.get_observation_lock = threading.Lock()
         self.get_observation_lock.acquire()
@@ -115,7 +115,7 @@ class Manager(optopt.Management_class):
         self.train_wait_new = False
         self.last_objective = None
         if self.config.action_first_epochs:
-            self.set_observation((np.zeros([self.in_features], dtype = self.config.dtype), 0, False, 0))
+            self.set_observation((np.zeros([self.in_features], dtype = self.config.dtype), 0, False))
         if not self.agent_started:
             self.agent_started = True
             def agent_processing(agent):
