@@ -179,7 +179,8 @@ class Agent(optopt.Agency_class):
         episode = 0  
         while 1:
             # Training.
-            self.collect_actor.run()
+            with self.config.strategy.scope():
+                self.collect_actor.run()
             episode += 1
 
             loss_info = self.agent_learner.run(iterations=int(self.config.train_iterations) )
