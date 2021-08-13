@@ -9,116 +9,6 @@ from tf_agents.networks import network
 from tf_agents.specs import tensor_spec
 from tf_agents.utils import nest_utils
 
-class Exp_normalization_layer(tf.keras.layers.Layer):
-    def __init__(self, moving = 0.995, clip = 1):
-        super(Exp_normalization_layer, self).__init__()
-        self.momentum = self.add_weight(name = "moving", 
-                                    shape = (), 
-                                    initializer = 'zeros',
-                                    dtype = tf.float32, 
-                                    trainable = False)
-        self.run_count = self.add_weight(name = "run_count", 
-                                    shape = (), 
-                                    initializer = 'zeros',
-                                    dtype = tf.float32, 
-                                    trainable = False)
-        self.moving = moving
-        self.clip = clip
-
-    def build(self, input_shape):
-        self.exp_moving_mean = self.add_weight("exp_moving_mean",
-                                    shape=[input_shape[-1]], 
-                                    initializer = 'zeros',
-                                    dtype = tf.float32, 
-                                    trainable = False)
-        self.exp_moving_var = self.add_weight("exp_moving_mean",
-                                    shape=[input_shape[-1]], 
-                                    initializer = 'ones',
-                                    dtype = tf.float32, 
-                                    trainable = False)
-        
-    def call(self, inputs, training = None):
-        # https://stats.stackexchange.com/a/111912
-        #최초 샘플이 없기 때문에 mean에 신규 데이터를 포함해서 산정
-        tf.print("training = ", training)
-        if not training:
-            self.run_count.assign_add(1.)
-            self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
-            
-            var = tf.reduce_mean((inputs - self.exp_moving_mean) ** 2, tf.range(tf.rank(inputs) - 1))
-            self.exp_moving_var.assign( self.momentum * (self.exp_moving_var + (1 - self.momentum) * var) )
-
-            mean = tf.reduce_mean(inputs, tf.range(tf.rank(inputs) - 1))
-            self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean)
-
-        return tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
-
-    def get_config(self):
-        return {"moving": self.moving, 'clip': self.clip}
-class Exp_moving_mean_metric(tf.keras.metrics.Metric):
-  def __init__(self, moving = 0.995, clip = 1, name='exp_normalization_metric'):
-      super(Exp_moving_mean_metric, self).__init__(name=name)
-      self.momentum = self.add_weight(name = "moving", 
-                                  shape = (), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
-      self.run_count = self.add_weight(name = "run_count", 
-                                  shape = (), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
-      self.exp_moving_mean = self.add_weight("exp_moving_mean",
-                                  shape=(), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
-      self.moving = moving
-      self.clip = clip
-
-  def update_state(self, value, *args, **kwargs):
-      self.run_count.assign_add(1.)
-      self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
-      self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * value)
-  def result(self):
-    return self.exp_moving_mean
-class Exp_moving_std_metric(tf.keras.metrics.Metric):
-    
-  def __init__(self, moving = 0.995, clip = 1, name='exp_normalization_metric'):
-      super(Exp_moving_std_metric, self).__init__(name=name)
-      self.momentum = self.add_weight(name = "moving", 
-                                  shape = (), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
-      self.run_count = self.add_weight(name = "run_count", 
-                                  shape = (), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
-      self.exp_moving_mean = self.add_weight("exp_moving_mean",
-                                  shape=(), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, 
-                                  trainable = False)
-      self.exp_moving_var = self.add_weight("exp_moving_var",
-                                  shape=(), 
-                                  initializer = 'ones',
-                                  dtype = tf.float32, 
-                                  trainable = False)
-      self.moving = moving
-      self.clip = clip
-
-  def update_state(self, value, *args, **kwargs):
-      self.run_count.assign_add(1.)
-      self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
-      
-      var = ((value - self.exp_moving_mean) ** 2)
-      self.exp_moving_var.assign( self.momentum * (self.exp_moving_var + (1 - self.momentum) * var) )
-
-      self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * value)
-  def result(self):
-    return self.exp_moving_var ** 0.5
 class actor_deterministic_rnn_network(network.Network):
   """Creates a recurrent actor network."""
   def __init__(self,
@@ -238,54 +128,50 @@ class actor_deterministic_rnn_network(network.Network):
         observation, step_type=step_type, network_state=network_state,
         training=training)
     return tf.cond(tf.equal(tf.rank(state), 2), lambda : while_collecting(state), lambda : while_training(state) ), network_state
-class weight_metrics_wrapper(tf.keras.models.Model):
-    def __init__(self, model:tf.keras.models.Model):
-        super(weight_metrics_wrapper, self).__init__()
-        self.model = model
-    def get_weight_metrics(self):
-        name_set = {}
-        metrics = []
-        for lay in self.model.layers:
-            for i, W in enumerate(lay.weights):
-                try: 
-                    lay_name = lay.name
-                    try:
-                        int(lay_name.split('_')[-1])
-                        lay_name = '_'.join(lay_name.split('_')[:-1])
-                    except: lay_name = lay_name
-                    name = lay_name + f'_weight_{i}_norm'
-                    if name in name_set:
-                        name_set[name]+=1
-                        name += f"_{name_set[name]}"
-                    else: name_set[name] = 0
-                    metrics.append({'value':tf.norm(W, 2), 'name': name})
-                except: pass
-        return metrics
-    def _update_metric(self, value, name):
-        self.add_metric
-    def get_metric_names(self):
-        return [M['name'] for M in self.get_metrics()]
 
-    def call(self, input, training = None):
-        output = self.model(input, training)
-        if training:
-            for M in self.get_metrics(): self.add_metric(M['value'], name = M['name'])
-        return output
-class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer):
-    def __init__(self, sub_optimizer: tf.keras.optimizers.Optimizer, model: weight_metrics_wrapper):
-        self.sub_optimizer = sub_optimizer
-        self._create_slots = sub_optimizer._create_slots
-        self._prepare_local = sub_optimizer._prepare_local
-        self._resource_apply_dense = sub_optimizer._resource_apply_dense
-        self._resource_apply_sparse = sub_optimizer._resource_apply_sparse
-        super(optimizer_metrics_wrapper, self).__init__()
-    
-    def apply_gradients(self,
-                        grads_and_vars,
-                        name=None,
-                        experimental_aggregate_gradients=True):
-        RET = self.sub_optimizer.apply_gradients(
-                        grads_and_vars,
-                        name=None,
-                        experimental_aggregate_gradients=True)
-        return RET
+class Exp_normalization_layer(tf.keras.layers.Layer):
+    def __init__(self, moving = 0.995, clip = 1):
+        super(Exp_normalization_layer, self).__init__()
+        self.momentum = self.add_weight(name = "moving", 
+                                    shape = (), 
+                                    initializer = 'zeros',
+                                    dtype = tf.float32, 
+                                    trainable = False)
+        self.run_count = self.add_weight(name = "run_count", 
+                                    shape = (), 
+                                    initializer = 'zeros',
+                                    dtype = tf.float32, 
+                                    trainable = False)
+        self.moving = moving
+        self.clip = clip
+
+    def build(self, input_shape):
+        self.exp_moving_mean = self.add_weight("exp_moving_mean",
+                                    shape=[input_shape[-1]], 
+                                    initializer = 'zeros',
+                                    dtype = tf.float32, 
+                                    trainable = False)
+        self.exp_moving_var = self.add_weight("exp_moving_mean",
+                                    shape=[input_shape[-1]], 
+                                    initializer = 'ones',
+                                    dtype = tf.float32, 
+                                    trainable = False)
+        
+    def call(self, inputs, training = None):
+        # https://stats.stackexchange.com/a/111912
+        #최초 샘플이 없기 때문에 mean에 신규 데이터를 포함해서 산정
+        #tf.print("training = ", training)
+        if not training:
+            self.run_count.assign_add(1.)
+            self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
+            
+            var = tf.reduce_mean((inputs - self.exp_moving_mean) ** 2, tf.range(tf.rank(inputs) - 1))
+            self.exp_moving_var.assign( self.momentum * (self.exp_moving_var + (1 - self.momentum) * var) )
+
+            mean = tf.reduce_mean(inputs, tf.range(tf.rank(inputs) - 1))
+            self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean)
+
+        return tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
+
+    def get_config(self):
+        return {"moving": self.moving, 'clip': self.clip}

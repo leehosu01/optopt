@@ -29,6 +29,7 @@ tf.compat.v1.enable_v2_behavior()
 
 import optopt
 from typing import Tuple, List, Union, Callable
+
 class Env(optopt.Environment_class):
   def __init__(self, manager :optopt.Management_class, feature_cnt, Variable_definer:optopt.Variable_class, config : optopt.Config):
     self.Variables = Variable_definer
@@ -60,8 +61,8 @@ class Env(optopt.Environment_class):
     if not self.wait_reset:
       print("ABNORMAL! reset with self.wait_reset == ", self.wait_reset)
 
-    Obs, Rew, self._episode_ended, step_type = RET
-    print("ENV._reset : ", Obs, Rew, self._episode_ended, step_type)
+    Obs, Rew, self._episode_ended = RET
+    print("ENV._reset : ", Obs, Rew, self._episode_ended)
     self.is_reset = True
     self.wait_reset = False
     return ts.restart(*self.cast(Obs))
@@ -109,6 +110,9 @@ class Variable_definer(optopt.Variable_class):
         assert len(values) == self.get_param_cnt()
         for [V, _, func, _], v2 in zip(self.hyper_parameters, values):
             V.assign(func(v2))
+    def get_values(self):
+        assert self.is_frozen
+        return [V.value().numpy() for V, _, _, _ in self.hyper_parameters]
     def set_values(self, values : Union[list, np.ndarray]):
         assert self.is_frozen
         assert len(values) == self.get_param_cnt()

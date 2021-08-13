@@ -15,6 +15,7 @@
 -------------
 1. env의 관측값에는 hyper parameter를 포함한다. 물론 정규화될 예정
 2. 시작값은 전체가 결측이라는 문제를 갖고 있다. 이것을 input drop & is_null 로 분리해서 입력해주자. 
+3. reset시 null 대신 1회 시작후 값으로 받는 옵션
 
 ## optimizer 문제
 ----------------
@@ -36,19 +37,17 @@
 grad <-> momentum 의 cosnorm은 중요할 것 같긴 하다.
 
 1. 이것은 optopt optimizer을 쓸지 말지를 선택 가능하게 한다.
-2. 선택할 경우 추가된 특성값 전달 과정의 표준화를 위해 metric으로 넘겨야하는데 가능한가?
+2. 선택할 경우 추가된 특성값 전달 과정의 표준화는 get_callback에서 해당 metric을 받기위한 함수를 추가로 제공한다.
 
 > * opt = optimizer_wrapper(subopt, model = None)# if model != None & model 은 model wrapper형 => metric 추가작업
 > * model.compile(optimizer = opt)
-> * optimizer_wrapper에서 get_slot으로 name을 모아서 model_wrapper로 해당 exp_moving_metric 생성을 요청함.
-> 
+
 > * 각 metric은 3종류의 momentum을 갖는다. 0.9, 0.99, 0.999. 
-> * 나머지 함수는 놔두고, apply_gradients에서만 특성 추출을 위한 연산을 추가후 진행한다.
+> * 나머지 함수는 놔두고, apply_gradients에서만 특성 추출을 위한 연산을 추가 후 진행한다.
 > * 추가로 변수를 만들지 않을 여지가 있는경우를 고려하여 (ex momentum), lazy 하게 추가 생성(& 관리) 하고 사용
-
 >> momentum이 있으면 제공하고 없으면 포기한다. 또한, 모델이 알아서 어느정도 감안할테니, momentum 변화후 cosnorm한다. 
+> * get_callback에 opt_wrapper의 함수 get_metrics를 호출하는것 으로 처리한다.
 
-3. 오히려 metric wrapper에서 묶어주는게 구현상 효율적일수도 있다. (하지만, 중복 계산은 싫다)
 
 설계는 optimzier만 최적화하는게 아니고, 모든 종류의 parameter을 조정하는것을 염두한다. (ex, label smoothing, dropout rate, ...)
 tensorflow keras 구현상 rate 에 tf.Variables를 제공못한다는게 우습지만, 직접 layer로 구현하면 사용가능하게라도 할수있게 한다는 목표.

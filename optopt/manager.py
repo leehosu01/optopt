@@ -55,12 +55,12 @@ class Manager(optopt.Management_class):
 
         self.train_wait_new = True
         self.compiled = True
-    def get_callback(self):
+    def get_callback(self, additional_metrics :List[optopt.Metric_wrapper] = []):
         assert self.compiled
-        return simple_callback(self, self.using_features, self.objective)
+        return simple_callback(self, self.using_features, self.objective, get_additional_metrics = additional_metrics)
 
-    def set_observation(self, infos):#obs_info, rew, done, step_type
-        assert len(infos) == 4
+    def set_observation(self, infos):#obs_info, rew, done
+        assert len(infos) == 3
         self.set_observation_lock.acquire()
         devprint("set_observation1", self.set_observation_lock.locked())
         assert self.get_observation_lock.locked()
@@ -86,6 +86,7 @@ class Manager(optopt.Management_class):
         self.action_queue.put(action)
         devprint("set_action3", self.action_queue.qsize())
         self.get_action_lock.release()
+        
     def get_action(self):
         self.get_action_lock.acquire()
         devprint("get_action1", self.set_action_lock.locked())
@@ -105,7 +106,8 @@ class Manager(optopt.Management_class):
         assert self.train_wait_new
         self.train_wait_new = False
         self.last_objective = None
-        self.set_observation((np.zeros([self.in_features], dtype = self.config.dtype), 0, False, 0))
+        if self.action_first_epochs:
+            self.set_observation((np.zeros([self.in_features], dtype = self.config.dtype), 0, False, 0))
         if not self.agent_started:
             self.agent_started = True
             def agent_processing(agent):
@@ -113,32 +115,40 @@ class Manager(optopt.Management_class):
                 agent.start()
             self.agent_thread = threading.Thread(target = agent_processing, args = (self.agent, ))
             self.agent_thread.start()
-        self.set_hyperparameters()
+        if self.action_first_epochs:
+            self.set_hyperparameters()
 
     def epoch_end(self, obs_info, obj, done):
         assert self.compiled
         obj_delta = obj if self.last_objective is None else (obj - self.last_objective)
         Rew = obj_delta * self.object_multiplier
-        step_type = 2 if done else 1
         self.last_objective = obj
         obs = list(zip(*sorted(obs_info.items())))[1]
-        self.set_observation((np.asarray(obs, dtype = self.config.dtype), Rew, done, step_type))
+        if self.config.provide_hyperparameter_info:
+            obs = list(obs) + self.Variables.get_value()
+        self.set_observation((np.asarray(obs, dtype = self.config.dtype), Rew, done))
         if done: self.train_wait_new = True 
         else: self.set_hyperparameters()
 
 
 
 class simple_callback(tf.keras.callbacks.Callback):
-    def __init__(self, parent_callback : Manager, using_features, objective):
+    def __init__(self, parent_callback : Manager, using_features, objective, get_additional_metrics: List[optopt.Metric_wrapper] = []):
         self.parent_callback = parent_callback
         self.using_features = using_features
         self.objective = objective
+        self.get_additional_metrics = get_additional_metrics
     def set_params(self, params):
         self.epochs = params['epochs']
     def get_info(self, epoch, logs):
+        obj = logs[self.objective]
         tmp ={'progress':(1 + epoch)/self.epochs}
         tmp.update({K:logs[K] for K in self.using_features if K in logs})
-        return tmp, logs[self.objective], (self.epochs == epoch + 1)
+        if self.get_additional_metrics is not None:
+            for metric_wrapper in self.get_additional_metrics:
+                logs = metric_wrapper.get_metrics()
+                tmp.update({K:logs[K] for K in self.using_features if K in logs})
+        return tmp, obj, (self.epochs == epoch + 1)
     def on_train_begin(self, logs = None):
         self.parent_callback.train_begin()
     def on_epoch_end(self, epoch, logs=None):
