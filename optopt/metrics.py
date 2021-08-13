@@ -99,7 +99,7 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
                 self.update_metric(f'Average_per_parameter_update_magnitude/{vars.name}', Average_per_parameter_update_magnitude, self.exp_momentum)
             except: pass 
             try: # inner feature 5
-                Log_ratio_of_update_norm_and_parameter_norm = tf.math.log(tf.norm(update, 2) / ( 1e-9 + tf.norm(vars, 2)))
+                Log_ratio_of_update_norm_and_parameter_norm = tf.math.log(tf.norm(update, 2) + 1e-9) - tf.math.log( tf.norm(vars, 2) + 1e-9)
                 self.update_metric(f'Log_ratio_of_update_norm_and_parameter_norm/{vars.name}', Log_ratio_of_update_norm_and_parameter_norm, self.exp_momentum)
             except: pass 
             try: # inner feature 8
