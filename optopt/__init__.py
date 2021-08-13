@@ -42,23 +42,18 @@ class Metric_wrapper:
 class Exp_moving_mean_metric(tf.keras.metrics.Metric):
   def __init__(self, moving = 0.995, name='exp_normalization_metric'):
       super(Exp_moving_mean_metric, self).__init__(name=name)
-      self.momentum = self.add_weight(name = "moving", 
-                                  shape = (), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, )
-      self.run_count = self.add_weight(name = "run_count", 
-                                  shape = (), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, )
-      self.exp_moving_mean = self.add_weight("exp_moving_mean",
-                                  shape=(), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, )
+      self.momentum = tf.Variable(0, name = "moving", 
+                                  dtype = tf.float32, trainable = False)
+      self.run_count = tf.Variable(0, name = "run_count", 
+                                  dtype = tf.float32, trainable = False)
+      self.exp_moving_mean = tf.Variable(0, name = "exp_moving_mean",
+                                  dtype = tf.float32, trainable = False)
       self.moving = moving
 
   def update_state(self, value, *args, **kwargs):
       self.run_count.assign_add(1.)
       self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
+      value = tf.cast(value, tf.float32)
       self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * value)
   def result(self):
     return self.exp_moving_mean
@@ -66,28 +61,22 @@ class Exp_moving_std_metric(tf.keras.metrics.Metric):
     
   def __init__(self, moving = 0.995, name='exp_normalization_metric'):
       super(Exp_moving_std_metric, self).__init__(name=name)
-      self.momentum = self.add_weight(name = "moving", 
-                                  shape = (), 
+      self.momentum = tf.Variable(0, name = "moving", 
+                                  dtype = tf.float32, trainable = False)
+      self.run_count = tf.Variable(0, name = "run_count", 
+                                  dtype = tf.float32, trainable = False)
+      self.exp_moving_mean = tf.Variable(0, name = "exp_moving_mean",
                                   initializer = 'zeros',
-                                  dtype = tf.float32, )
-      self.run_count = self.add_weight(name = "run_count", 
-                                  shape = (), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, )
-      self.exp_moving_mean = self.add_weight("exp_moving_mean",
-                                  shape=(), 
-                                  initializer = 'zeros',
-                                  dtype = tf.float32, )
-      self.exp_moving_var = self.add_weight("exp_moving_var",
-                                  shape=(), 
-                                  initializer = 'ones',
-                                  dtype = tf.float32, )
+                                  dtype = tf.float32, trainable = False)
+      self.exp_moving_var = tf.Variable(1, name = "exp_moving_var",
+                                  dtype = tf.float32, trainable = False)
       self.moving = moving
 
   def update_state(self, value, *args, **kwargs):
       self.run_count.assign_add(1.)
       self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
       
+      value = tf.cast(value, tf.float32)
       var = ((value - self.exp_moving_mean) ** 2)
       self.exp_moving_var.assign( self.momentum * (self.exp_moving_var + (1 - self.momentum) * var) )
 
