@@ -109,13 +109,13 @@ class Manager(optopt.Management_class):
         if action is None: self.Variables.initialize_values()
         else: self.Variables.shift_values(action)
     
-    def train_begin(self):
+    def train_begin(self, obs_info = {}, done = False):
         assert self.compiled
         assert self.train_wait_new
         self.train_wait_new = False
         self.last_objective = None
         if self.config.action_first_epochs:
-            self.set_observation((np.zeros([self.in_features], dtype = self.config.dtype), 0, False))
+            self.set_observation((np.asarray([obs_info.get(K, 0.) for K in self.using_features], dtype = self.config.dtype), 0, done))
         if not self.agent_started:
             self.agent_started = True
             def agent_processing(agent):
@@ -148,7 +148,7 @@ class simple_callback(tf.keras.callbacks.Callback):
     def set_params(self, params):
         self.epochs = params['epochs']
     def get_info(self, epoch, logs):
-        obj = logs[self.objective]
+        obj = logs.get(self.objective, None)
         tmp ={'progress':(1 + epoch)/self.epochs}
         tmp.update({K:logs[K] for K in self.using_features if K in logs})
         if self.get_additional_metrics is not None:
@@ -157,7 +157,8 @@ class simple_callback(tf.keras.callbacks.Callback):
                 tmp.update({K:logs[K] for K in self.using_features if K in logs})
         return tmp, obj, (self.epochs == epoch + 1)
     def on_train_begin(self, logs = None):
-        self.parent_callback.train_begin()
+        obs, _, done = self.get_info(-1, logs)
+        self.parent_callback.train_begin(obs, done)
     def on_epoch_end(self, epoch, logs=None):
         #epoch = 0 으로 시작한다.
         obs, obj, done = self.get_info(epoch, logs)
