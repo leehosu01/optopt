@@ -98,7 +98,7 @@ class Config:
     def __init__(self, 
                 action_first_epochs = True,
                 provide_hyperparameter_info = False,
-
+                strategy :tf.distribute.Strategy = None,
                 lstm_size = [256],
                 replay_buffer_capacity = 10000,
                 sequence_length = 5,
@@ -124,7 +124,7 @@ class Config:
         self.action_first_epochs = action_first_epochs
         self.provide_hyperparameter_info = provide_hyperparameter_info
         #self.info_dropout = info_dropout
-
+        self.strategy = strategy or tf.distribute.get_strategy()
         self.lstm_size = lstm_size
         self.replay_buffer_capacity = replay_buffer_capacity
         self.sequence_length = sequence_length

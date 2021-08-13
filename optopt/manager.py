@@ -28,40 +28,40 @@ class Manager(optopt.Management_class):
         self.compiled = False
     def compile(self, using_features:List[str]):
         assert not self.compiled
+        with self.config.strategy.scope():
+            self.Variables.freeze()
+            
+            for I in using_features:
+                assert I not in do_not_provide_feature_name and f"do not use feature name as `{I}` "
+            self.using_features = ['progress'] + using_features
+            if self.config.provide_hyperparameter_info:
+                self.using_features += self.Variables.get_param_names()
+            self.using_features = sorted(self.using_features)
 
-        self.Variables.freeze()
-        
-        for I in using_features:
-            assert I not in do_not_provide_feature_name and f"do not use feature name as `{I}` "
-        self.using_features = ['progress'] + using_features
-        if self.config.provide_hyperparameter_info:
-            self.using_features += self.Variables.get_param_names()
-        self.using_features = sorted(self.using_features)
+            self.set_observation_lock = threading.Lock()
+            self.get_observation_lock = threading.Lock()
+            self.get_observation_lock.acquire()
 
-        self.set_observation_lock = threading.Lock()
-        self.get_observation_lock = threading.Lock()
-        self.get_observation_lock.acquire()
+            self.set_action_lock = threading.Lock()
+            self.get_action_lock = threading.Lock()
+            self.get_action_lock.acquire()
+            
+            self.observation_queue = Queue(2)
+            self.action_queue = Queue(2)
 
-        self.set_action_lock = threading.Lock()
-        self.get_action_lock = threading.Lock()
-        self.get_action_lock.acquire()
-        
-        self.observation_queue = Queue(2)
-        self.action_queue = Queue(2)
+            self.in_features = len(self.using_features)
+            self.out_features = self.Variables.get_param_cnt()
 
-        self.in_features = len(self.using_features)
-        self.out_features = self.Variables.get_param_cnt()
+            self.env = env.Env(self,
+                                    in_feature_cnt = self.in_features, 
+                                    Variable_definer = self.Variables,
+                                    config = self.config)
+            
+            self.agent = agent.Agent(self, self.env, config = self.config)
+            self.agent_started = False
 
-        self.env = env.Env(self,
-                                in_feature_cnt = self.in_features, 
-                                Variable_definer = self.Variables,
-                                config = self.config)
-        
-        self.agent = agent.Agent(self, self.env, config = self.config)
-        self.agent_started = False
-
-        self.train_wait_new = True
-        self.compiled = True
+            self.train_wait_new = True
+            self.compiled = True
     def get_callback(self, additional_metrics :List[optopt.Metric_wrapper] = []):
         assert self.compiled
         return simple_callback(self, self.using_features, self.objective, get_additional_metrics = additional_metrics)
@@ -119,8 +119,9 @@ class Manager(optopt.Management_class):
         if not self.agent_started:
             self.agent_started = True
             def agent_processing(agent):
-                agent.prepare()
-                agent.start()
+                with self.config.strategy.scope():
+                    agent.prepare()
+                    agent.start()
             self.agent_thread = threading.Thread(target = agent_processing, args = (self.agent, ))
             self.agent_thread.start()
         self.set_hyperparameters()
