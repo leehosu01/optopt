@@ -67,3 +67,5 @@ tensorflow keras 구현상 rate 에 tf.Variables를 제공못한다는게 우습
 1. 신규수집시 마다 1배치 학습
 2. 기본적으로 100회에 random scheduling(dynamic) = 0.44, optuna (static) = 0.426, optopt(dynamic) 는 0.473까지 도달가능이지만, 제시된 구현으로 충분히(?) 0.49~0.50 까지 도달할것임
 
+## 기타.
+1. strategy는 사용자가 optopt 관련 코드 전체를 scope에 감싸면 되기때문에 strategy관련을 제거

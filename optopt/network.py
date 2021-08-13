@@ -55,6 +55,70 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
 
     def get_config(self):
         return {"moving": self.moving, 'clip': self.clip}
+class Exp_moving_mean_metric(tf.keras.metrics.Metric):
+  def __init__(self, moving = 0.995, clip = 1, name='exp_normalization_metric'):
+      super(Exp_moving_mean_metric, self).__init__(name=name)
+      self.momentum = self.add_weight(name = "moving", 
+                                  shape = (), 
+                                  initializer = 'zeros',
+                                  dtype = tf.float32, 
+                                  trainable = False)
+      self.run_count = self.add_weight(name = "run_count", 
+                                  shape = (), 
+                                  initializer = 'zeros',
+                                  dtype = tf.float32, 
+                                  trainable = False)
+      self.exp_moving_mean = self.add_weight("exp_moving_mean",
+                                  shape=(), 
+                                  initializer = 'zeros',
+                                  dtype = tf.float32, 
+                                  trainable = False)
+      self.moving = moving
+      self.clip = clip
+
+  def update_state(self, value, *args, **kwargs):
+      self.run_count.assign_add(1.)
+      self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
+      self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * value)
+  def result(self):
+    return self.exp_moving_mean
+class Exp_moving_std_metric(tf.keras.metrics.Metric):
+    
+  def __init__(self, moving = 0.995, clip = 1, name='exp_normalization_metric'):
+      super(Exp_moving_std_metric, self).__init__(name=name)
+      self.momentum = self.add_weight(name = "moving", 
+                                  shape = (), 
+                                  initializer = 'zeros',
+                                  dtype = tf.float32, 
+                                  trainable = False)
+      self.run_count = self.add_weight(name = "run_count", 
+                                  shape = (), 
+                                  initializer = 'zeros',
+                                  dtype = tf.float32, 
+                                  trainable = False)
+      self.exp_moving_mean = self.add_weight("exp_moving_mean",
+                                  shape=(), 
+                                  initializer = 'zeros',
+                                  dtype = tf.float32, 
+                                  trainable = False)
+      self.exp_moving_var = self.add_weight("exp_moving_var",
+                                  shape=(), 
+                                  initializer = 'ones',
+                                  dtype = tf.float32, 
+                                  trainable = False)
+      self.moving = moving
+      self.clip = clip
+
+  def update_state(self, value, *args, **kwargs):
+      self.run_count.assign_add(1.)
+      self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
+      
+      var = ((value - self.exp_moving_mean) ** 2)
+      self.exp_moving_var.assign( self.momentum * (self.exp_moving_var + (1 - self.momentum) * var) )
+
+      self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * value)
+  def result(self):
+    return self.exp_moving_var ** 0.5
 class actor_deterministic_rnn_network(network.Network):
   """Creates a recurrent actor network."""
   def __init__(self,
@@ -178,7 +242,7 @@ class weight_metrics_wrapper(tf.keras.models.Model):
     def __init__(self, model:tf.keras.models.Model):
         super(weight_metrics_wrapper, self).__init__()
         self.model = model
-    def get_metrics(self):
+    def get_weight_metrics(self):
         name_set = {}
         metrics = []
         for lay in self.model.layers:
@@ -197,7 +261,8 @@ class weight_metrics_wrapper(tf.keras.models.Model):
                     metrics.append({'value':tf.norm(W, 2), 'name': name})
                 except: pass
         return metrics
-
+    def _update_metric(self, value, name):
+        self.add_metric
     def get_metric_names(self):
         return [M['name'] for M in self.get_metrics()]
 
@@ -206,3 +271,21 @@ class weight_metrics_wrapper(tf.keras.models.Model):
         if training:
             for M in self.get_metrics(): self.add_metric(M['value'], name = M['name'])
         return output
+class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer):
+    def __init__(self, sub_optimizer: tf.keras.optimizers.Optimizer, model: weight_metrics_wrapper):
+        self.sub_optimizer = sub_optimizer
+        self._create_slots = sub_optimizer._create_slots
+        self._prepare_local = sub_optimizer._prepare_local
+        self._resource_apply_dense = sub_optimizer._resource_apply_dense
+        self._resource_apply_sparse = sub_optimizer._resource_apply_sparse
+        super(optimizer_metrics_wrapper, self).__init__()
+    
+    def apply_gradients(self,
+                        grads_and_vars,
+                        name=None,
+                        experimental_aggregate_gradients=True):
+        RET = self.sub_optimizer.apply_gradients(
+                        grads_and_vars,
+                        name=None,
+                        experimental_aggregate_gradients=True)
+        return RET

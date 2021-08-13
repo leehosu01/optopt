@@ -47,50 +47,48 @@ from optopt import network as opt_network
 class Agent(optopt.Agency_class):
     def __init__(self, manager:optopt.Management_class,
                     environment :optopt.Environment_class,
-                    config :optopt.Config,
-                    strategy = strategy_utils.get_strategy(tpu=False, use_gpu=False)):
+                    config :optopt.Config):
         self.manager = manager
         self.env = environment
         self.config = config
-        self.strategy = strategy
         collect_env = self.env
         observation_spec, action_spec, time_step_spec = spec_utils.get_tensor_specs(collect_env)
-        with self.strategy.scope():
-            params = {}
-            model = opt_network.actor_deterministic_rnn_network(
-                        observation_spec, action_spec, preprocessing_layers=opt_network.Exp_normalization_layer(clip = 2),
-                        preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
-                        input_fc_layer_params=[], input_dropout_layer_params=None,
-                        lstm_size=self.config.lstm_size,
-                        output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
-                        dtype=tf.float32)
-            params['actor_network'] = model
+    
+        params = {}
+        model = opt_network.actor_deterministic_rnn_network(
+                    observation_spec, action_spec, preprocessing_layers=opt_network.Exp_normalization_layer(clip = 2),
+                    preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
+                    input_fc_layer_params=[], input_dropout_layer_params=None,
+                    lstm_size=self.config.lstm_size,
+                    output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
+                    dtype=tf.float32)
+        params['actor_network'] = model
 
-            model = tf_agents.networks.value_rnn_network.ValueRnnNetwork(
-                        (observation_spec, action_spec), preprocessing_layers=(opt_network.Exp_normalization_layer(clip = 2), tf.keras.layers.Lambda(lambda X:X)),
-                        preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
-                        conv_layer_params=None, input_fc_layer_params=[],
-                        input_dropout_layer_params=None, lstm_size=self.config.lstm_size, output_fc_layer_params=[],
-                        activation_fn=tf.keras.activations.relu, dtype=tf.float32,
-                        name='ValueRnnNetwork'
-                    )
-            params['critic_network'] = model
+        model = tf_agents.networks.value_rnn_network.ValueRnnNetwork(
+                    (observation_spec, action_spec), preprocessing_layers=(opt_network.Exp_normalization_layer(clip = 2), tf.keras.layers.Lambda(lambda X:X)),
+                    preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
+                    conv_layer_params=None, input_fc_layer_params=[],
+                    input_dropout_layer_params=None, lstm_size=self.config.lstm_size, output_fc_layer_params=[],
+                    activation_fn=tf.keras.activations.relu, dtype=tf.float32,
+                    name='ValueRnnNetwork'
+                )
+        params['critic_network'] = model
 
-            train_step = self.train_step = train_utils.create_train_step()
-            self.tf_agent = tf_agent = tf_agents.agents.Td3Agent(
-                    time_step_spec,
-                    action_spec,
-                    actor_optimizer=tf.keras.optimizers.Adam(
-                        learning_rate=self.config.actor_learning_rate),
-                    critic_optimizer=tf.keras.optimizers.Adam(
-                        learning_rate=self.config.critic_learning_rate),
-                    train_step_counter=train_step,
-                    target_update_tau=self.config.target_update_tau,
-                    gamma=self.config.gamma,
-                    **params)
+        train_step = self.train_step = train_utils.create_train_step()
+        self.tf_agent = tf_agent = tf_agents.agents.Td3Agent(
+                time_step_spec,
+                action_spec,
+                actor_optimizer=tf.keras.optimizers.Adam(
+                    learning_rate=self.config.actor_learning_rate),
+                critic_optimizer=tf.keras.optimizers.Adam(
+                    learning_rate=self.config.critic_learning_rate),
+                train_step_counter=train_step,
+                target_update_tau=self.config.target_update_tau,
+                gamma=self.config.gamma,
+                **params)
 
-            tf_agent.initialize()
-            
+        tf_agent.initialize()
+        
     def get_eval_metrics(self):
         self.eval_actor.run()
         results = {}
@@ -103,104 +101,102 @@ class Agent(optopt.Agency_class):
 
     def prepare(self):
         self.reach_prepare = True
-        with self.strategy.scope():
-            collect_env = self.env
-            tf_agent = self.tf_agent
-            train_step = self.train_step
+        collect_env = self.env
+        tf_agent = self.tf_agent
+        train_step = self.train_step
 
-            table_name = 'uniform_table'
-            table = reverb.Table(
-                table_name,
-                max_size=self.config.replay_buffer_capacity,
-                sampler=reverb.selectors.Uniform(),
-                remover=reverb.selectors.Fifo(),
-                rate_limiter=reverb.rate_limiters.MinSize(1))
+        table_name = 'uniform_table'
+        table = reverb.Table(
+            table_name,
+            max_size=self.config.replay_buffer_capacity,
+            sampler=reverb.selectors.Uniform(),
+            remover=reverb.selectors.Fifo(),
+            rate_limiter=reverb.rate_limiters.MinSize(1))
 
-            reverb_server = reverb.Server([table])
-            reverb_replay = reverb_replay_buffer.ReverbReplayBuffer(
-                                tf_agent.collect_data_spec,
-                                sequence_length=self.config.sequence_length,
-                                table_name=table_name,
-                                local_server=reverb_server)
-            dataset = reverb_replay.as_dataset(
-                sample_batch_size=self.config.train_batch_size,
-                num_steps=self.config.sequence_length )
-            _experience_dataset_fn = lambda: dataset
-            def experience_dataset_fn():
-                print('start training')
-                return _experience_dataset_fn()
-            
-            tf_collect_policy = tf_agent.collect_policy
-            collect_policy = py_tf_eager_policy.PyTFEagerPolicy(
-                                tf_collect_policy, use_tf_function=True)
-            random_policy = random_py_policy.RandomPyPolicy(
-                                collect_env.time_step_spec(), collect_env.action_spec())
-            
+        reverb_server = reverb.Server([table])
+        reverb_replay = reverb_replay_buffer.ReverbReplayBuffer(
+                            tf_agent.collect_data_spec,
+                            sequence_length=self.config.sequence_length,
+                            table_name=table_name,
+                            local_server=reverb_server)
+        dataset = reverb_replay.as_dataset(
+            sample_batch_size=self.config.train_batch_size,
+            num_steps=self.config.sequence_length )
+        _experience_dataset_fn = lambda: dataset
+        def experience_dataset_fn():
+            print('start training')
+            return _experience_dataset_fn()
+        
+        tf_collect_policy = tf_agent.collect_policy
+        collect_policy = py_tf_eager_policy.PyTFEagerPolicy(
+                            tf_collect_policy, use_tf_function=True)
+        random_policy = random_py_policy.RandomPyPolicy(
+                            collect_env.time_step_spec(), collect_env.action_spec())
+        
 
-            params = {'pad_end_of_episodes': True} if tf_agents.__version__ >= '0.8.0' else {}
-            rb_observer = reverb_utils.ReverbAddTrajectoryObserver(
-                                reverb_replay.py_client,
-                                table_name,
-                                sequence_length=self.config.sequence_length,
-                                stride_length=1, **params)
-            if self.config.collect_episodes_for_env_testing:
-                self.initial_collect_actor = actor.Actor(
-                                collect_env,
-                                random_policy,
-                                train_step,
-                                episodes_per_run=self.config.collect_episodes_for_env_testing,
-                                observers=[rb_observer])
-                                
-            env_step_metric = py_metrics.EnvironmentSteps()
-            self.collect_actor = collect_actor = actor.Actor(
-                                collect_env,
-                                collect_policy,
-                                train_step,
-                                episodes_per_run=self.config.collect_episodes_for_training,
-                                metrics=actor.collect_metrics(10),
-                                summary_dir=os.path.join(self.config.savedir, learner.TRAIN_DIR),
-                                observers=[rb_observer, env_step_metric])
-                                
-            saved_model_dir = os.path.join(self.config.savedir, learner.POLICY_SAVED_MODEL_DIR)
+        params = {'pad_end_of_episodes': True} if tf_agents.__version__ >= '0.8.0' else {}
+        rb_observer = reverb_utils.ReverbAddTrajectoryObserver(
+                            reverb_replay.py_client,
+                            table_name,
+                            sequence_length=self.config.sequence_length,
+                            stride_length=1, **params)
+        if self.config.collect_episodes_for_env_testing:
+            self.initial_collect_actor = actor.Actor(
+                            collect_env,
+                            random_policy,
+                            train_step,
+                            episodes_per_run=self.config.collect_episodes_for_env_testing,
+                            observers=[rb_observer])
+                            
+        env_step_metric = py_metrics.EnvironmentSteps()
+        self.collect_actor = collect_actor = actor.Actor(
+                            collect_env,
+                            collect_policy,
+                            train_step,
+                            episodes_per_run=self.config.collect_episodes_for_training,
+                            metrics=actor.collect_metrics(10),
+                            summary_dir=os.path.join(self.config.savedir, learner.TRAIN_DIR),
+                            observers=[rb_observer, env_step_metric])
+                            
+        saved_model_dir = os.path.join(self.config.savedir, learner.POLICY_SAVED_MODEL_DIR)
 
-            # Triggers to save the agent's policy checkpoints.
-            learning_triggers = [
-                triggers.PolicySavedModelTrigger(
-                    saved_model_dir,
-                    tf_agent,
-                    train_step,
-                    interval=self.config.policy_save_interval),
-                triggers.StepPerSecondLogTrigger(train_step, interval=1000),
-            ]
+        # Triggers to save the agent's policy checkpoints.
+        learning_triggers = [
+            triggers.PolicySavedModelTrigger(
+                saved_model_dir,
+                tf_agent,
+                train_step,
+                interval=self.config.policy_save_interval),
+            triggers.StepPerSecondLogTrigger(train_step, interval=1000),
+        ]
 
-            self.agent_learner = agent_learner = learner.Learner(
-                    self.config.savedir,
-                    train_step,
-                    tf_agent,
-                    experience_dataset_fn,
-                    triggers=learning_triggers,
-                    strategy = self.strategy)
-            # Reset the train step
-            self.tf_agent.train_step_counter.assign(0)
-            self.history = []
-            self.finish_prepare = True
+        self.agent_learner = agent_learner = learner.Learner(
+                self.config.savedir,
+                train_step,
+                tf_agent,
+                experience_dataset_fn,
+                triggers=learning_triggers)
+        # Reset the train step
+        self.tf_agent.train_step_counter.assign(0)
+        self.history = []
+        self.finish_prepare = True
     def start(self):
         assert self.reach_prepare
         assert self.finish_prepare
-        with self.strategy.scope():
-            try: self.initial_collect_actor.run()
-            except: pass
-            self.reach_start = True
-            episode = 0  
-            while 1:
-                # Training.
-                self.collect_actor.run()
-                episode += 1
 
-                loss_info = self.agent_learner.run(iterations=int(self.config.train_iterations) )
-                self.history.append(loss_info.loss.numpy())
-                if self.config.verbose and episode % self.config.verbose == 0:
-                    print(np.mean(self.history[-self.config.verbose]))
+        try: self.initial_collect_actor.run()
+        except: pass
+        self.reach_start = True
+        episode = 0  
+        while 1:
+            # Training.
+            self.collect_actor.run()
+            episode += 1
+
+            loss_info = self.agent_learner.run(iterations=int(self.config.train_iterations) )
+            self.history.append(loss_info.loss.numpy())
+            if self.config.verbose and episode % self.config.verbose == 0:
+                print(np.mean(self.history[-self.config.verbose]))
     def finish(self):
         self.rb_observer.close()
         self.reverb_server.stop()
