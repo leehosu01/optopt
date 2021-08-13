@@ -111,7 +111,7 @@ class Manager(optopt.Management_class):
         assert self.train_wait_new
         self.train_wait_new = False
         self.last_objective = None
-        if self.action_first_epochs:
+        if self.config.action_first_epochs:
             self.set_observation((np.zeros([self.in_features], dtype = self.config.dtype), 0, False, 0))
         if not self.agent_started:
             self.agent_started = True
@@ -120,7 +120,7 @@ class Manager(optopt.Management_class):
                 agent.start()
             self.agent_thread = threading.Thread(target = agent_processing, args = (self.agent, ))
             self.agent_thread.start()
-        if self.action_first_epochs:
+        if self.config.action_first_epochs:
             self.set_hyperparameters()
 
     def epoch_end(self, obs_info, obj, done):
@@ -130,7 +130,7 @@ class Manager(optopt.Management_class):
         self.last_objective = obj
         obs = list(zip(*sorted(obs_info.items())))[1]
         if self.config.provide_hyperparameter_info:
-            obs = list(obs) + self.Variables.get_value()
+            obs = list(obs) + self.Variables.get_values()
         self.set_observation((np.asarray(obs, dtype = self.config.dtype), Rew, done))
         if done: self.train_wait_new = True 
         else: self.set_hyperparameters()
