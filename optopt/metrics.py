@@ -11,7 +11,7 @@ class weight_metrics_wrapper(tf.keras.models.Model, optopt.Metric_wrapper):
     def build(self, *args, **kwargs):
         self.metric_requires = []
         name_set = {}
-        for lay in self.model.layers:
+        for lay in self.sub_model.layers:
             for i, W in enumerate(lay.weights):
                 try: 
                     lay_name = lay.name
