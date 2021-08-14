@@ -172,12 +172,15 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
             self.momentum.assign(tf.cast(X, tf.float32))
             
             var = tf.reduce_mean((inputs - self.exp_moving_mean) ** 2, self.reduce_axis)
-            X = self.momentum * (self.exp_moving_var + (1 - self.momentum) * var)
-            self.exp_moving_var.assign(tf.cast(X, tf.float32))
+            #X = self.momentum * (self.exp_moving_var + (1 - self.momentum) * var)
+            #self.exp_moving_var.assign(tf.cast(X, tf.float32))
+            X = (1-self.momentum)*(self.exp_moving_var - self.momentum * var)
+            self.exp_moving_var.assign_sub(tf.cast(X, tf.float32))
 
             mean = tf.reduce_mean(inputs, self.reduce_axis)
-            X = (self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean
-            self.exp_moving_mean.assign(tf.cast(X, tf.float32))
+            #X = (self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean
+            #self.exp_moving_mean.assign(tf.cast(X, tf.float32))
+            self.exp_moving_mean.assign_add(tf.cast((1 - self.momentum) * (mean - self.exp_moving_mean), tf.float32))
 
         return tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
     def get_config(self):
