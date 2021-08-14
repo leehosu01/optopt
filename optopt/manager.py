@@ -106,7 +106,9 @@ class Manager(optopt.Management_class):
     
     def set_hyperparameters(self):
         action = self.get_action()
-        if action is None: self.Variables.initialize_values()
+        if action is None: 
+            print("set_hyperparameters: re initialize hyper parameters")
+            self.Variables.initialize_values()
         else: self.Variables.shift_values(action)
     
     def train_begin(self, obs_info = {}, done = False):
