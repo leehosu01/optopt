@@ -125,7 +125,7 @@ class actor_deterministic_rnn_network(network.Network):
         return output_actions
     def reformation(X):
         X = tf.squeeze(X)
-        X = tf.reshape(X, tf.concat([tf.ones([tf.maximum(0, 3 - tf.rank(X)), ]), tf.shape(X)], axis = -1))
+        X = tf.reshape(X, tf.concat([tf.ones([tf.maximum(0, 3 - tf.rank(X)), ], dtype = tf.int32), tf.cast(tf.shape(X), dtype = tf.int32)], axis = -1))
         return X
     #print(f"network_state = {[a_network_state.shape for a_network_state in network_state]}")
     network_state = [reformation(a_network_state) for a_network_state in network_state]
