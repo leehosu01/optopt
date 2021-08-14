@@ -1,5 +1,4 @@
 
-
 import gin
 import numpy as np
 import tensorflow as tf  # pylint: disable=g-explicit-tensorflow-version-import
@@ -8,7 +7,6 @@ from tf_agents.networks import lstm_encoding_network
 from tf_agents.networks import network
 from tf_agents.specs import tensor_spec
 from tf_agents.utils import nest_utils
-
 class actor_deterministic_rnn_network(network.Network):
   """Creates a recurrent actor network."""
   def __init__(self,
@@ -114,7 +112,16 @@ class actor_deterministic_rnn_network(network.Network):
   @property
   def output_tensor_spec(self):
     return self._output_tensor_spec
+  @staticmethod
   @tf.function
+  def reformation(X):
+      init_rank = tf.rank(X) 
+      if init_rank <= 3: return X
+      X = tf.squeeze(X)
+      new_shape = tf.concat([tf.ones([tf.maximum(0, 3 - tf.rank(X)), ], dtype = tf.int32), tf.cast(tf.shape(X), dtype = tf.int32)], axis = -1)
+      tf.print("new_shape", new_shape)
+      X = tf.reshape(X, new_shape)
+      return X
   def call(self, observation, step_type, network_state=(), training=False):
     def while_collecting(state):
         state = tf.expand_dims(state, axis = -2)
@@ -124,14 +131,9 @@ class actor_deterministic_rnn_network(network.Network):
     def while_training(state):
         output_actions = self._projection_networks(state)
         return output_actions
-    def reformation(X):
-        init_rank = tf.rank(X) 
-        X = tf.squeeze(X)
-        X = tf.reshape(X, tf.concat([tf.ones([tf.maximum(0, 3 - tf.rank(X)), ], dtype = tf.int32), tf.cast(tf.shape(X), dtype = tf.int32)], axis = -1))
-        return X
-    print(f"network_state = {[a_network_state.shape for a_network_state in network_state]}")
-    if len(network_state) and tf.rank(network_state) > 2:
-        network_state = [reformation(a_network_state) for a_network_state in network_state]
+    #print(f"network_state = {[a_network_state.shape for a_network_state in network_state]}")
+    #if len(network_state):
+    #    network_state = [actor_deterministic_rnn_network.reformation(a_network_state) for a_network_state in network_state]
     print(f"network_state = {[a_network_state.shape for a_network_state in network_state]}")
     state, network_state = self._lstm_encoder(
         observation, step_type=step_type, network_state=network_state,
