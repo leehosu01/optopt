@@ -1,9 +1,10 @@
 0.4.0
 TPU compatible
-dtype 자동 적응 -> 
-아마도 metrics들 cast확인
-exp normal layer확인 필요
-
+> 1. dtype 자동 적응 -> 
+>> * 아마도 metrics들 cast확인
+>> * exp normal layer확인 필요
+> 2. tpu에서 save 불가
+>> * 기본적으로 cpu strategy 를 config 로
 
 
 0.5.0

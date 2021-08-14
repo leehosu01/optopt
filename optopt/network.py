@@ -151,7 +151,7 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
                                     initializer = 'zeros',
                                     dtype = tf.float32, 
                                     trainable = False)
-        self.exp_moving_var = self.add_weight("exp_moving_mean",
+        self.exp_moving_var = self.add_weight("exp_moving_var",
                                     shape=[input_shape[-1]], 
                                     initializer = 'ones',
                                     dtype = tf.float32, 
@@ -161,6 +161,8 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
         # https://stats.stackexchange.com/a/111912
         #최초 샘플이 없기 때문에 mean에 신규 데이터를 포함해서 산정
         #tf.print("training = ", training)
+        dtype = inputs.dtype
+        inputs = tf.cast(inputs, tf.float32)
         if not training:
             self.run_count.assign_add(1.)
             self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
@@ -171,7 +173,7 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
             mean = tf.reduce_mean(inputs, tf.range(tf.rank(inputs) - 1))
             self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean)
 
-        return tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
-
+        RET = tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
+        return tf.cast(RET, dtype)
     def get_config(self):
         return {"moving": self.moving, 'clip': self.clip}

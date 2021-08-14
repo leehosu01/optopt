@@ -178,11 +178,11 @@ class Agent(optopt.Agency_class):
         self.reach_start = True
         episode = 0  
         while 1:
-            # Training.
-            with self.config.strategy.scope():
-                self.collect_actor.run()
+            # Collecting ( call by training == False ).
+            self.collect_actor.run()
             episode += 1
 
+            # Training.
             loss_info = self.agent_learner.run(iterations=int(self.config.train_iterations) )
             self.history.append(loss_info.loss.numpy())
             if self.config.verbose and episode % self.config.verbose == 0:

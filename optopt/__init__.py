@@ -113,7 +113,7 @@ class Config:
         self.action_first_epochs = action_first_epochs
         self.provide_hyperparameter_info = provide_hyperparameter_info
         #self.info_dropout = info_dropout
-        self.strategy = strategy or tf.distribute.get_strategy()
+        self.strategy = strategy or tf.distribute.OneDeviceStrategy(device="/cpu")
         self.lstm_size = lstm_size
         self.replay_buffer_capacity = replay_buffer_capacity
         self.sequence_length = sequence_length
