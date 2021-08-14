@@ -161,14 +161,13 @@ class Agent(optopt.Agency_class):
         except Exception as e:
             print("Save model skipped, error = \n", e, "\n------------------ exception report end")
         learning_triggers.append(triggers.StepPerSecondLogTrigger(train_step, interval=1000))
-
+        
         self.agent_learner = agent_learner = learner.Learner(
                 self.config.savedir,
                 train_step,
                 tf_agent,
                 experience_dataset_fn,
-                triggers=learning_triggers, 
-                run_optimizer_variable_init = False)
+                triggers=learning_triggers)
         # Reset the train step
         self.tf_agent.train_step_counter.assign(0)
         self.history = []
