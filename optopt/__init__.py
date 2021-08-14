@@ -52,10 +52,14 @@ class Exp_moving_mean_metric(tf.keras.metrics.Metric):
         self.strategy = tf.distribute.get_strategy()
 
     def update_state(self, value, *args, **kwargs):
-        self.run_count.assign_add(1.)
-        self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
         value = tf.cast(value, tf.float32)
-        self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * value)
+
+        self.run_count.assign_add(1.)
+        X= tf.minimum(1 - 1/self.run_count, self.moving)
+        self.momentum.assign(tf.cast(X, tf.float32))
+
+        X = (1 - self.momentum) * (value - self.exp_moving_mean)
+        self.exp_moving_mean.assign_add(tf.cast(X, tf.float32))
     def result(self):
         with self.strategy.scope():
             self.exp_moving_mean.assign(self.strategy.reduce("MEAN", self.exp_moving_mean, axis=None))
@@ -77,14 +81,18 @@ class Exp_moving_std_metric(tf.keras.metrics.Metric):
         self.strategy = tf.distribute.get_strategy()
 
     def update_state(self, value, *args, **kwargs):
-        self.run_count.assign_add(1.)
-        self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
-        
         value = tf.cast(value, tf.float32)
-        var = ((value - self.exp_moving_mean) ** 2)
-        self.exp_moving_var.assign( self.momentum * (self.exp_moving_var + (1 - self.momentum) * var) )
 
-        self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * value)
+        self.run_count.assign_add(1.)
+        X= tf.minimum(1 - 1/self.run_count, self.moving)
+        self.momentum.assign(tf.cast(X, tf.float32))
+        
+        var = (value - self.exp_moving_mean) ** 2
+        X = (1-self.momentum)*(self.exp_moving_var - self.momentum * var)
+        self.exp_moving_var.assign_sub(tf.cast(X, tf.float32))
+
+        X = (1 - self.momentum) * (value - self.exp_moving_mean)
+        self.exp_moving_mean.assign_add(tf.cast(X, tf.float32))
     def result(self):
         with self.strategy.scope():
             self.exp_moving_mean.assign(self.strategy.reduce("MEAN", self.exp_moving_mean, axis=None))
