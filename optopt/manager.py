@@ -57,7 +57,8 @@ class Manager(optopt.Management_class):
                                 Variable_definer = self.Variables,
                                 config = self.config)
         
-        self.agent = agent.Agent(self, self.env, config = self.config)
+        with self.config.strategy.scope():
+            self.agent = agent.Agent(self, self.env, config = self.config)
         self.agent_started = False
 
         self.train_wait_new = True
