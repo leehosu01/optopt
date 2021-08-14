@@ -129,51 +129,56 @@ class actor_deterministic_rnn_network(network.Network):
         training=training)
     return tf.cond(tf.equal(tf.rank(state), 2), lambda : while_collecting(state), lambda : while_training(state) ), network_state
 
+
 class Exp_normalization_layer(tf.keras.layers.Layer):
     def __init__(self, moving = 0.995, clip = 1):
         super(Exp_normalization_layer, self).__init__()
         self.momentum = self.add_weight(name = "moving", 
                                     shape = (), 
                                     initializer = 'zeros',
-                                    dtype = tf.float32, 
                                     trainable = False)
         self.run_count = self.add_weight(name = "run_count", 
                                     shape = (), 
                                     initializer = 'zeros',
-                                    dtype = tf.float32, 
                                     trainable = False)
-        self.moving = moving
-        self.clip = clip
+        self.moving = self.add_weight(name = 'max_moving',
+                                      shape = (),
+                                      initializer = tf.constant_initializer(moving),
+                                      trainable= False)
+        self.clip = self.add_weight(name = 'clip_range',
+                                    shape = (),
+                                    initializer = tf.constant_initializer(clip),
+                                    trainable= False)
 
     def build(self, input_shape):
         self.exp_moving_mean = self.add_weight("exp_moving_mean",
                                     shape=[input_shape[-1]], 
                                     initializer = 'zeros',
-                                    dtype = tf.float32, 
                                     trainable = False)
         self.exp_moving_var = self.add_weight("exp_moving_var",
                                     shape=[input_shape[-1]], 
                                     initializer = 'ones',
-                                    dtype = tf.float32, 
                                     trainable = False)
+        self.reduce_axis = tf.convert_to_tensor(list(range(len(input_shape) - 1)), dtype = tf.int32)
         
     def call(self, inputs, training = None):
         # https://stats.stackexchange.com/a/111912
         #최초 샘플이 없기 때문에 mean에 신규 데이터를 포함해서 산정
         #tf.print("training = ", training)
         dtype = inputs.dtype
-        inputs = tf.cast(inputs, tf.float32)
         if not training:
             self.run_count.assign_add(1.)
-            self.momentum.assign(tf.maximum(1 - 1/self.run_count, self.moving))
+            X= tf.minimum(1 - 1/self.run_count, self.moving)
+            self.momentum.assign(tf.cast(X, tf.float32))
             
-            var = tf.reduce_mean((inputs - self.exp_moving_mean) ** 2, tf.range(tf.rank(inputs) - 1))
-            self.exp_moving_var.assign( self.momentum * (self.exp_moving_var + (1 - self.momentum) * var) )
+            var = tf.reduce_mean((inputs - self.exp_moving_mean) ** 2, self.reduce_axis)
+            X = self.momentum * (self.exp_moving_var + (1 - self.momentum) * var)
+            self.exp_moving_var.assign(tf.cast(X, tf.float32))
 
-            mean = tf.reduce_mean(inputs, tf.range(tf.rank(inputs) - 1))
-            self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean)
+            mean = tf.reduce_mean(inputs, self.reduce_axis)
+            X = (self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean
+            self.exp_moving_mean.assign(tf.cast(X, tf.float32))
 
-        RET = tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
-        return tf.cast(RET, dtype)
+        return tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
     def get_config(self):
         return {"moving": self.moving, 'clip': self.clip}
