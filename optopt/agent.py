@@ -164,7 +164,9 @@ class Agent(optopt.Agency_class):
                 train_step,
                 tf_agent,
                 experience_dataset_fn,
-                triggers=learning_triggers)
+                triggers=learning_triggers,
+                strategy=self.config.strategy,
+                run_optimizer_variable_init=False)
         # Reset the train step
         self.tf_agent.train_step_counter.assign(0)
         self.history = []
