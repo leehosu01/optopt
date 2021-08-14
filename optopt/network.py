@@ -125,13 +125,15 @@ class actor_deterministic_rnn_network(network.Network):
         return output_actions
     def reformation(X):
         X = tf.squeeze(X)
-        if 2 > tf.rank(X):
-            X = tf.expand_dims(X, tf.range(tf.maximum(0, 2 - tf.rank(X))))
+        X = tf.expand_dims(X, tf.range(tf.maximum(0, 3 - tf.rank(X))))
         return X
-    network_state = reformation(network_state)
+    #print(f"network_state = {[a_network_state.shape for a_network_state in network_state]}")
+    network_state = [reformation(a_network_state) for a_network_state in network_state]
+    #print(f"network_state = {[a_network_state.shape for a_network_state in network_state]}")
     state, network_state = self._lstm_encoder(
         observation, step_type=step_type, network_state=network_state,
         training=training)
+    return self._projection_networks(state)
     return tf.cond(tf.equal(tf.rank(state), 2), lambda : while_collecting(state), lambda : while_training(state) ), network_state
 
 
