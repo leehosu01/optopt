@@ -11,9 +11,10 @@ motive by [LHOPT](https://arxiv.org/pdf/2106.00958.pdf)
 ------------------
 
 [X] (apply at 0.3.2) add skipped reward at reset next step
-[ ] (apply at 0.3.3) optimizer_metrics_wrapper에서 momentum / variance 가져오는 optimizer와 훈련에 사용되는  optimizer분리기능. ( ex, Lookahead(Radam) / mixed_precision.LossScaleOptimizer(optimizer) )
+[X] (apply at 0.3.3) actor 처리 효율 증가
+[ ] (apply at 0.4.0) optimizer_metrics_wrapper에서 momentum / variance 가져오는 optimizer와 훈련에 사용되는  optimizer분리기능. ( ex, Lookahead(Radam) / mixed_precision.LossScaleOptimizer(optimizer) )
 
-[ ] (apply at 0.4.0) manager <-> agent TCP로 분리
+[ ] (apply at 0.5.0) manager <-> agent TCP로 분리
 - [ ] independent agent control and user model fitting
 - [ ] TPU compatible
 - [ ] mixed_float16 (GPU) compatible

@@ -115,6 +115,12 @@ class actor_deterministic_rnn_network(network.Network):
   def output_tensor_spec(self):
     return self._output_tensor_spec
   def call(self, observation, step_type, network_state=(), training=False):
+    
+    state, network_state = self._lstm_encoder(
+        observation, step_type=step_type, network_state=network_state,
+        training=training)
+    return self._projection_networks(state, training=training), network_state
+
     def while_collecting(state):
         state = tf.expand_dims(state, axis = -2)
         output_actions = self._projection_networks(state)
@@ -123,10 +129,6 @@ class actor_deterministic_rnn_network(network.Network):
     def while_training(state):
         output_actions = self._projection_networks(state)
         return output_actions
-    
-    state, network_state = self._lstm_encoder(
-        observation, step_type=step_type, network_state=network_state,
-        training=training)
     return tf.cond(tf.equal(tf.rank(state), 2), lambda : while_collecting(state), lambda : while_training(state) ), network_state
 
 
