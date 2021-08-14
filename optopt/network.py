@@ -143,12 +143,14 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
                                     trainable = False)
         self.moving = self.add_weight(name = 'max_moving',
                                       shape = (),
-                                      initializer = tf.constant_initializer(float(moving)),
+                                      initializer = 'zeros',
                                       trainable= False)
+        self.moving.assign_add(tf.cast(moving, self.moving.dtype))
         self.clip = self.add_weight(name = 'clip_range',
                                     shape = (),
-                                    initializer = tf.constant_initializer(float(clip)),
+                                    initializer = 'zeros',
                                     trainable= False)
+        self.clip.assign_add(tf.cast(clip, self.clip.dtype))
 
     def build(self, input_shape):
         self.exp_moving_mean = self.add_weight("exp_moving_mean",
@@ -164,8 +166,6 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
     def call(self, inputs, training = None):
         # https://stats.stackexchange.com/a/111912
         #최초 샘플이 없기 때문에 mean에 신규 데이터를 포함해서 산정
-        #tf.print("training = ", training)
-        dtype = inputs.dtype
         if not training:
             self.run_count.assign_add(1.)
             X= tf.minimum(1 - 1/self.run_count, self.moving)
@@ -180,8 +180,9 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
             mean = tf.reduce_mean(inputs, self.reduce_axis)
             #X = (self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean
             #self.exp_moving_mean.assign(tf.cast(X, tf.float32))
-            self.exp_moving_mean.assign_add(tf.cast((1 - self.momentum) * (mean - self.exp_moving_mean), tf.float32))
+            X = (1 - self.momentum) * (mean - self.exp_moving_mean)
+            self.exp_moving_mean.assign_add(tf.cast(X, tf.float32))
 
-        return tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var ** 0.5), -self.clip, self.clip)
+        return tf.clip_by_value( (inputs - self.exp_moving_mean) / (1e-6 + self.exp_moving_var ** 0.5), -self.clip, self.clip)
     def get_config(self):
         return {"moving": self.moving, 'clip': self.clip}
