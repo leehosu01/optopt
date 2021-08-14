@@ -121,7 +121,8 @@ class Manager(optopt.Management_class):
         if not self.agent_started:
             self.agent_started = True
             def agent_processing(agent):
-                agent.prepare()
+                with self.config.strategy.scope():
+                    agent.prepare()
                 agent.start()
             self.agent_thread = threading.Thread(target = agent_processing, args = (self.agent, ))
             self.agent_thread.start()

@@ -47,6 +47,7 @@ class Env(optopt.Environment_class):
 
     self.last_observation = None
     self.steps = None
+    self.unused_rew = 0.
   def action_spec(self):
     return self._action_spec
 
@@ -65,6 +66,7 @@ class Env(optopt.Environment_class):
     Obs, Rew, self._episode_ended = RET
     #print("ENV._reset : ", Obs, Rew, self._episode_ended)
     print("ENV._reset : ", Rew, self._episode_ended)
+    self.unused_rew = Rew
     self.is_reset = True
     self.wait_reset = False
     return ts.restart(*self.cast(Obs))
@@ -82,7 +84,8 @@ class Env(optopt.Environment_class):
     self.manager.set_action(action)
     #print("ENV._step <= return set_action")
     self.last_observation = Obs, Rew, self._episode_ended = self.manager.get_observation()
-
+    Rew += self.unused_rew
+    self.unused_rew = 0.
     if self._episode_ended:
       self.wait_reset = True
       return ts.termination(Obs, Rew)
