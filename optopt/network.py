@@ -123,7 +123,11 @@ class actor_deterministic_rnn_network(network.Network):
     def while_training(state):
         output_actions = self._projection_networks(state)
         return output_actions
-    
+    def reformation(X):
+        X = tf.squeeze(X)
+        X = tf.expand_dims(X, tf.range(tf.rank(X)-3))
+        return X
+    network_state = reformation(network_state)
     state, network_state = self._lstm_encoder(
         observation, step_type=step_type, network_state=network_state,
         training=training)
