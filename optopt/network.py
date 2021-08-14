@@ -170,21 +170,25 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
         #최초 샘플이 없기 때문에 mean에 신규 데이터를 포함해서 산정
         if not training:
             self.run_count.assign_add(1.)
-            X= tf.minimum(1 - 1/self.run_count, self.moving)
+            X= tf.minimum(1 - 0.99/self.run_count, self.moving)
             self.momentum.assign(tf.cast(X, tf.float32))
             
-            var = tf.reduce_mean((inputs - self.exp_moving_mean) ** 2, self.reduce_axis)
-            #X = self.momentum * (self.exp_moving_var + (1 - self.momentum) * var)
-            #self.exp_moving_var.assign(tf.cast(X, tf.float32))
-            X = (1-self.momentum)*(self.exp_moving_var - self.momentum * var)
-            self.exp_moving_var.assign_sub(tf.cast(X, tf.float32))
+            reduce_axis = tf.cast(tf.range(0, tf.rank(inputs) - 1), tf.int32)
+            var = tf.reduce_mean((inputs - self.exp_moving_mean) ** 2, reduce_axis)
+            mean = tf.reduce_mean(inputs, reduce_axis)
+        
+            X = self.momentum * (self.exp_moving_var + (1 - self.momentum) * var)
+            self.exp_moving_var.assign(tf.cast(X, tf.float32))
+            #X = (1 - self.momentum) * (self.exp_moving_var - self.momentum * var)
+            #self.exp_moving_var.assign_sub(tf.cast(X, tf.float32))
 
-            mean = tf.reduce_mean(inputs, self.reduce_axis)
             #X = (self.exp_moving_mean * self.momentum) + (1 - self.momentum) * mean
             #self.exp_moving_mean.assign(tf.cast(X, tf.float32))
             X = (1 - self.momentum) * (mean - self.exp_moving_mean)
             self.exp_moving_mean.assign_add(tf.cast(X, tf.float32))
 
-        return tf.clip_by_value( (inputs - self.exp_moving_mean) / (1e-6 + self.exp_moving_var ** 0.5), -self.clip, self.clip)
+        return tf.clip_by_value( (inputs - self.exp_moving_mean) / tf.maximum(1e-6, self.exp_moving_var) ** 0.5,
+                                 -self.clip,
+                                 self.clip)
     def get_config(self):
         return {"moving": self.moving_V, 'clip': self.clip_V}
