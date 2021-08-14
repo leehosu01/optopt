@@ -131,7 +131,7 @@ class actor_deterministic_rnn_network(network.Network):
 
 
 class Exp_normalization_layer(tf.keras.layers.Layer):
-    def __init__(self, moving = 0.995, clip = 1):
+    def __init__(self, moving = 0.995, clip = 1.):
         super(Exp_normalization_layer, self).__init__()
         self.momentum = self.add_weight(name = "moving", 
                                     shape = (), 
@@ -143,11 +143,11 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
                                     trainable = False)
         self.moving = self.add_weight(name = 'max_moving',
                                       shape = (),
-                                      initializer = tf.constant_initializer(moving),
+                                      initializer = tf.constant_initializer(float(moving)),
                                       trainable= False)
         self.clip = self.add_weight(name = 'clip_range',
                                     shape = (),
-                                    initializer = tf.constant_initializer(clip),
+                                    initializer = tf.constant_initializer(float(clip)),
                                     trainable= False)
 
     def build(self, input_shape):
