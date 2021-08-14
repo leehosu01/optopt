@@ -90,7 +90,7 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
                     std_not_less_than_eps = 1. - tf.reduce_mean( tf.cast(tf.less((variance - epsilon) ** 0.5, epsilon), tf.float32 ))
                     self.update_metric(f'Std_not_less_than_eps/{vars.name}', std_not_less_than_eps, self.exp_momentum)
                 else:
-                    std_not_less_than_eps = 1. - tf.reduce_mean( tf.cast(tf.less(variance ** 0.5, epsilon) )
+                    std_not_less_than_eps = 1. - tf.reduce_mean( tf.cast(tf.less(variance ** 0.5, epsilon), tf.float32 ) )
                     self.update_metric(f'Std_not_less_than_eps/{vars.name}', std_not_less_than_eps, self.exp_momentum)
             except: pass 
             try: # inner feature 3
