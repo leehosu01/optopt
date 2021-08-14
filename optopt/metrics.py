@@ -87,11 +87,11 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
             del old_vars
             try: # inner feature 2
                 if self.eps_control_as_adabelief:
-                    std_not_less_than_eps = 1. - tf.reduce_mean( tf.less((variance - epsilon) ** 0.5, epsilon) )
-                    self.update_metric(f'std_not_less_than_eps/{vars.name}', std_not_less_than_eps, self.exp_momentum)
+                    std_not_less_than_eps = 1. - tf.reduce_mean( tf.cast(tf.less((variance - epsilon) ** 0.5, epsilon) )
+                    self.update_metric(f'Std_not_less_than_eps/{vars.name}', std_not_less_than_eps, self.exp_momentum)
                 else:
-                    std_not_less_than_eps = 1. - tf.reduce_mean( tf.less(variance ** 0.5, epsilon) )
-                    self.update_metric(f'std_not_less_than_eps/{vars.name}', std_not_less_than_eps, self.exp_momentum)
+                    std_not_less_than_eps = 1. - tf.reduce_mean( tf.cast(tf.less(variance ** 0.5, epsilon) )
+                    self.update_metric(f'Std_not_less_than_eps/{vars.name}', std_not_less_than_eps, self.exp_momentum)
             except: pass 
             try: # inner feature 3
                 # what is pre-LR?? 모르니까 그냥 평균 업데이트 취급함.
