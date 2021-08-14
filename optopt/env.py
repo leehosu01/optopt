@@ -63,7 +63,8 @@ class Env(optopt.Environment_class):
       print("ABNORMAL! reset with self.wait_reset == ", self.wait_reset)
 
     Obs, Rew, self._episode_ended = RET
-    print("ENV._reset : ", Obs, Rew, self._episode_ended)
+    #print("ENV._reset : ", Obs, Rew, self._episode_ended)
+    print("ENV._reset : ", Rew, self._episode_ended)
     self.is_reset = True
     self.wait_reset = False
     return ts.restart(*self.cast(Obs))
