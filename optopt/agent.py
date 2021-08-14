@@ -158,7 +158,17 @@ class Agent(optopt.Agency_class):
                 interval=self.config.policy_save_interval),
             triggers.StepPerSecondLogTrigger(train_step, interval=1000),
         ]
-
+        learning_triggers = []
+        try:
+            X = triggers.PolicySavedModelTrigger(
+                    saved_model_dir,
+                    tf_agent,
+                    train_step,
+                    interval=self.config.policy_save_interval)
+            learning_triggers.append(X)
+        except Exception as e:
+            print("Save model skipped, error = \n", e, "\n------------------ exception report end")
+        learning_triggers.append(triggers.StepPerSecondLogTrigger(train_step, interval=1000))
         self.agent_learner = agent_learner = learner.Learner(
                 self.config.savedir,
                 train_step,
