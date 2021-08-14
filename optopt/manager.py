@@ -57,7 +57,8 @@ class Manager(optopt.Management_class):
                                 Variable_definer = self.Variables,
                                 config = self.config)
         
-        self.agent = agent.Agent(self, self.env, config = self.config)
+        with self.config.strategy.scope():
+            self.agent = agent.Agent(self, self.env, config = self.config)
         self.agent_started = False
 
         self.train_wait_new = True
@@ -121,8 +122,7 @@ class Manager(optopt.Management_class):
         if not self.agent_started:
             self.agent_started = True
             def agent_processing(agent):
-                with self.config.strategy.scope():
-                    agent.prepare()
+                agent.prepare()
                 agent.start()
             self.agent_thread = threading.Thread(target = agent_processing, args = (self.agent, ))
             self.agent_thread.start()
