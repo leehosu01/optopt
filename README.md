@@ -9,6 +9,6 @@ motive by [LHOPT](https://arxiv.org/pdf/2106.00958.pdf)
 
 ## ToDo
 ------------------
-- [ ] pandas DataFrame based logging
-
+- [ ] TPU compatible
+- [ ] improve with optuna ? 
 - [ ] compare with optuna (static vs dynamic)
