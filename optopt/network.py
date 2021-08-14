@@ -141,6 +141,8 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
                                     shape = (), 
                                     initializer = 'zeros',
                                     trainable = False)
+        self.moving_V = moving
+        self.clip_V = clip
         self.moving = self.add_weight(name = 'max_moving',
                                       shape = (),
                                       initializer = 'zeros',
@@ -185,4 +187,4 @@ class Exp_normalization_layer(tf.keras.layers.Layer):
 
         return tf.clip_by_value( (inputs - self.exp_moving_mean) / (1e-6 + self.exp_moving_var ** 0.5), -self.clip, self.clip)
     def get_config(self):
-        return {"moving": self.moving, 'clip': self.clip}
+        return {"moving": self.moving_V, 'clip': self.clip_V}

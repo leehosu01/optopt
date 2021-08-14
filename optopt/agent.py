@@ -57,7 +57,7 @@ class Agent(optopt.Agency_class):
         params = {}
         model = opt_network.actor_deterministic_rnn_network(
                     observation_spec, action_spec, preprocessing_layers=opt_network.Exp_normalization_layer(clip = 2),
-                    preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
+                    preprocessing_combiner=None,
                     input_fc_layer_params=[], input_dropout_layer_params=None,
                     lstm_size=self.config.lstm_size,
                     output_fc_layer_params=[], activation_fn=tf.keras.activations.relu,
@@ -151,15 +151,15 @@ class Agent(optopt.Agency_class):
                                 
             saved_model_dir = os.path.join(self.config.savedir, learner.POLICY_SAVED_MODEL_DIR)
 
-            # Triggers to save the agent's policy checkpoints.
-            learning_triggers = [
-                triggers.PolicySavedModelTrigger(
-                    saved_model_dir,
-                    tf_agent,
-                    train_step,
-                    interval=self.config.policy_save_interval),
-                triggers.StepPerSecondLogTrigger(train_step, interval=1000),
-            ]
+        # Triggers to save the agent's policy checkpoints.
+        learning_triggers = [
+            triggers.PolicySavedModelTrigger(
+                saved_model_dir,
+                tf_agent,
+                train_step,
+                interval=self.config.policy_save_interval),
+            triggers.StepPerSecondLogTrigger(train_step, interval=1000),
+        ]
 
         self.agent_learner = agent_learner = learner.Learner(
                 self.config.savedir,

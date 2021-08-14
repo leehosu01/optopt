@@ -63,6 +63,13 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
         self.eps_control_as_adabelief = eps_control_as_adabelief
         self.exp_momentum = exp_momentum
         super(optimizer_metrics_wrapper, self).__init__(name = 'Optimizer_metrics_wrapper')
+    def get_config(self):
+        config = super(optimizer_metrics_wrapper, self).get_config()
+        config.update({"momentum_slot_name": self.momentum_slot_name})
+        config.update({"variance_slot_name": self.variance_slot_name})
+        config.update({"eps_control_as_adabelief": self.eps_control_as_adabelief})
+        config.update({"exp_momentum": self.exp_momentum})
+        return config
     def apply_gradients(self,
                         grads_and_vars,
                         name=None,
