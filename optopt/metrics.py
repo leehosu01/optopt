@@ -2,6 +2,7 @@ from logging import warning
 import tensorflow as tf
 import optopt 
 from typing import List, Union
+import warnings
 
 class weight_metrics_wrapper(tf.keras.models.Model, optopt.Metric_wrapper):
     def __init__(self, model:tf.keras.models.Model, exp_momentum : Union[float, List[float]] = [0.9, 0.95, 0.99]):
@@ -75,12 +76,12 @@ class optimizer_metrics_wrapper(tf.keras.optimizers.Optimizer, optopt.Metric_wra
                         name=name,
                         experimental_aggregate_gradients=experimental_aggregate_gradients)
         try: epsilon = self.sub_optimizer.epsilon
-        except: warning.warn(f"optimizer do not have epsilon", UserWarning)
+        except: warnings.warn(f"optimizer do not have epsilon", UserWarning)
         for [grad, vars], old_vars in zip(grads_and_vars, vars_copy):
             try: momentum = self.sub_optimizer.get_slot(vars, self.momentum_slot_name)
-            except: warning.warn(f"optimizer do not have 'm' (a.k.a momentum) for variable name {var.name}", UserWarning)
+            except: warnings.warn(f"optimizer do not have 'm' (a.k.a momentum) for variable name {var.name}", UserWarning)
             try: variance = self.sub_optimizer.get_slot(vars, self.variance_slot_name)
-            except: warning.warn(f"optimizer do not have 'v' (a.k.a variance) for variable name {var.name}", UserWarning)
+            except: warnings.warn(f"optimizer do not have 'v' (a.k.a variance) for variable name {var.name}", UserWarning)
             old_vars *= -1
             old_vars += vars
             update = old_vars
