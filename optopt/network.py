@@ -114,6 +114,7 @@ class actor_deterministic_rnn_network(network.Network):
   @property
   def output_tensor_spec(self):
     return self._output_tensor_spec
+  @tf.function
   def call(self, observation, step_type, network_state=(), training=False):
     def while_collecting(state):
         state = tf.expand_dims(state, axis = -2)
@@ -124,16 +125,18 @@ class actor_deterministic_rnn_network(network.Network):
         output_actions = self._projection_networks(state)
         return output_actions
     def reformation(X):
+        init_rank = tf.rank(X) 
         X = tf.squeeze(X)
         X = tf.reshape(X, tf.concat([tf.ones([tf.maximum(0, 3 - tf.rank(X)), ], dtype = tf.int32), tf.cast(tf.shape(X), dtype = tf.int32)], axis = -1))
         return X
     print(f"network_state = {[a_network_state.shape for a_network_state in network_state]}")
-    network_state = [reformation(a_network_state) for a_network_state in network_state]
+    if len(network_state) and tf.rank(network_state) > 2:
+        network_state = [reformation(a_network_state) for a_network_state in network_state]
     print(f"network_state = {[a_network_state.shape for a_network_state in network_state]}")
     state, network_state = self._lstm_encoder(
         observation, step_type=step_type, network_state=network_state,
         training=training)
-    return self._projection_networks(state)
+    return self._projection_networks(state), network_state
     return tf.cond(tf.equal(tf.rank(state), 2), lambda : while_collecting(state), lambda : while_training(state) ), network_state
 
 
