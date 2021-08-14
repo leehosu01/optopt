@@ -63,7 +63,8 @@ class Env(optopt.Environment_class):
       print("ABNORMAL! reset with self.wait_reset == ", self.wait_reset)
 
     Obs, Rew, self._episode_ended = RET
-    print("ENV._reset : ", Obs, Rew, self._episode_ended)
+    #print("ENV._reset : ", Obs, Rew, self._episode_ended)
+    print("ENV._reset : ", Rew, self._episode_ended)
     self.is_reset = True
     self.wait_reset = False
     return ts.restart(*self.cast(Obs))
@@ -140,7 +141,7 @@ class Variable_definer(optopt.Variable_class):
         
         projector = (lambda X:post_processing(X))
         tf_backend_Value = tf.Variable(init_min, trainable=False)
-        init_function = (lambda : (interpolation(random.random(), min_v, max_v)))
+        init_function = (lambda : (interpolation(random.random(), init_min, init_max)))
         shift_function= (lambda R: (np.clip( tf_backend_Value + interpolation(R, shift_min, shift_max) , min_v, max_v) ))
         compat_function= (lambda R: (interpolation(R, min_v, max_v) ))
         tf_frontend_Value = tf.Variable(projector(tf_backend_Value), trainable=False)
@@ -172,7 +173,7 @@ class Variable_definer(optopt.Variable_class):
         max_v = math.log(max_v)
         projector = (lambda X:post_processing(tf.exp(X)))
         tf_backend_Value = tf.Variable(init_min, trainable=False)
-        init_function = (lambda : (interpolation(random.random(), min_v, max_v)))
+        init_function = (lambda : (interpolation(random.random(), init_min, init_max)))
         shift_function= (lambda R: (np.clip( tf_backend_Value + interpolation(R, shift_min, shift_max) , min_v, max_v) ))
         compat_function= (lambda R: (interpolation(R, min_v, max_v) ))
         tf_frontend_Value = tf.Variable(projector(tf_backend_Value), trainable=False)
