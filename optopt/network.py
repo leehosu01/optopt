@@ -114,7 +114,6 @@ class actor_deterministic_rnn_network(network.Network):
   @property
   def output_tensor_spec(self):
     return self._output_tensor_spec
-  @tf.function  
   def call(self, observation, step_type, network_state=(), training=False):
     def while_collecting(state):
         state = tf.expand_dims(state, axis = -2)
@@ -127,7 +126,7 @@ class actor_deterministic_rnn_network(network.Network):
     def reformation(X):
         X = tf.squeeze(X)
         if 2 > tf.rank(X):
-            X = tf.expand_dims(X, tf.range(2 - tf.rank(X)))
+            X = tf.expand_dims(X, tf.range(tf.maximum(0, 2 - tf.rank(X))))
         return X
     network_state = reformation(network_state)
     state, network_state = self._lstm_encoder(
