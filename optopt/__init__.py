@@ -87,6 +87,7 @@ class Config:
     def __init__(self, 
                 action_first_epochs = True,
                 provide_hyperparameter_info = False,
+                guarantee_env_reward_at_reset = False,
                 strategy :tf.distribute.Strategy = None,
                 lstm_size = [256],
                 replay_buffer_capacity = 10000,
@@ -112,6 +113,7 @@ class Config:
             warnings.warn(f"action_first_epochs = {action_first_epochs}, they act without information", UserWarning)
         self.action_first_epochs = action_first_epochs
         self.provide_hyperparameter_info = provide_hyperparameter_info
+        self.guarantee_env_reward_at_reset = guarantee_env_reward_at_reset
         #self.info_dropout = info_dropout
         self.strategy = strategy or tf.distribute.get_strategy()
         self.lstm_size = lstm_size
