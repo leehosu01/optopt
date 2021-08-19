@@ -99,6 +99,7 @@ class apply_relu_reward_by_mul(float):
         return tf.maximum(0., self.value * X)
 def flood_mae_loss(flood = 0.01):
     def _sub(y_true, y_pred):
+        return (tf.abs(tf.abs(y_true - y_pred) - flood)+flood)
         return tf.reduce_mean(tf.abs(tf.abs(y_true - y_pred) - flood)+flood)
     return _sub
 class Config:

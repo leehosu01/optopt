@@ -1,22 +1,39 @@
 
 
-import gin
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import activations  # pylint: disable=g-explicit-tensorflow-version-import
 
 import tf_agents
 from tf_agents.networks import lstm_encoding_network
 from tf_agents.networks import network
-from tf_agents.specs import tensor_spec
-from tf_agents.utils import nest_utils
 from optopt import masking
+"""
 def hallucination_batch(layer :tf.keras.layers.Layer, rank : int):
     def _sub(inputs):
         X = tf.reshape(inputs, tf.concat([tf.ones((rank - tf.rank(inputs), ), dtype = tf.int32), tf.shape(inputs)], axis = -1))
         X = layer(X)
-        return tf.squeeze(X, tf.range(0, rank - tf.shape(inputs), dtype = tf.int32))
+        return tf.squeeze(X, axis = list(tf.range(0, rank - tf.rank(inputs), dtype = tf.int32)))
     return tf.keras.layers.Lambda(_sub)
+"""
+class hallucination_batch(tf.keras.layers.Layer):
+    def __init__(self, layer :tf.keras.layers.Layer, rank : int):
+        self.layer = layer
+        self.rank = rank
+        super(hallucination_batch, self).__init__()
+    def call(self, inputs, training = False):
+        X = tf.reshape(inputs, tf.concat([tf.ones((self.rank - tf.rank(inputs), ), dtype = tf.int32), tf.shape(inputs)], axis = -1))
+        X = self.layer(X)
+        return tf.squeeze(X, axis = list(range(0, self.rank - len(inputs.shape))))
+class masking_layer(tf.keras.layers.Layer):
+    def __init__(self, masking_rate, **kwargs):
+        self.kwargs = kwargs
+        self.masking_rate = masking_rate
+        super(masking_layer, self).__init__()
+    def call(self, inputs, training = False):
+        if training:
+            return masking.masking(inputs, masking_rate = self.masking_rate, **self.kwargs)
+        return masking.masking(inputs, masking_rate = 0.0, **self.kwargs)
+
 class actor_deterministic_standard_network(network.Network):
     def __init__(self,
                input_tensor_spec,
@@ -31,6 +48,7 @@ class actor_deterministic_standard_network(network.Network):
         min_v = output_tensor_spec.minimum
         max_v = output_tensor_spec.maximum
         self.Network = tf_agents.networks.Sequential([
+          masking_layer(is_null__mask = None, masking_rate = self.masking_rate, provide_is_null = True),
           tf.keras.layers.Dense(units, use_bias=True),
           hallucination_batch(tf.keras.layers.BatchNormalization(**config.batchNormalization_option), 3),
           tf.keras.layers.LSTM(units, return_state=True, return_sequences=True),
@@ -44,11 +62,7 @@ class actor_deterministic_standard_network(network.Network):
             state_spec=self.Network.state_spec,
             name=name)
     def call(self, observation, step_type, network_state=(), training=False):
-        if training:
-            feature = masking.masking(observation, is_null__mask = None, masking_rate = self.masking_rate, provide_is_null = True)
-        else:
-            feature = masking.masking(observation, is_null__mask = None, masking_rate = 0.0, provide_is_null = True)
-        return self.Network(feature, step_type = step_type, network_state = network_state, training = training)
+        return self.Network(observation, step_type = step_type, network_state = network_state, training = training)
 class critic_standard_network(network.Network):
     def __init__(self,
                input_tensor_spec,
@@ -60,24 +74,22 @@ class critic_standard_network(network.Network):
         self.masking_rate = masking_rate
 
         self.Network = tf_agents.networks.Sequential([
+          tf.keras.layers.Concatenate(axis = -1),
+          masking_layer(is_null__mask = None, masking_rate = self.masking_rate, provide_is_null = True),
           tf.keras.layers.Dense(units, use_bias=True),
           hallucination_batch(tf.keras.layers.BatchNormalization(**config.batchNormalization_option), 3),
           tf.keras.layers.LSTM(units, return_state=True, return_sequences=True),
           tf.keras.layers.Dense(units, activation = 'swish'),
           tf.keras.layers.Dense(1, kernel_initializer = 'zeros')
-        ], name = f"{name}/submodel")
+        ], input_spec = input_tensor_spec, name = f"{name}/submodel")
 
         super(critic_standard_network, self).__init__(
             input_tensor_spec=input_tensor_spec,
             state_spec=self.Network.state_spec,
             name=name)
     def call(self, observation, step_type, network_state=(), training=False):
-        observation = tf.concat(observation, axis = -1)
-        if training:
-            feature = masking.masking(observation, is_null__mask = None, masking_rate = self.masking_rate, provide_is_null = True)
-        else:
-            feature = masking.masking(observation, is_null__mask = None, masking_rate = 0.0, provide_is_null = True)
-        return self.Network(feature, step_type = step_type, network_state = network_state, training = training)
+        value, network_state =  self.Network(observation, step_type = step_type, network_state = network_state, training = training)
+        return tf.squeeze(value, -1), network_state
 class actor_deterministic_rnn_network(network.Network):
   """Creates a recurrent actor network."""
   def __init__(self,
