@@ -7,7 +7,7 @@ from queue import Queue
 from typing import List, Dict
 import optopt
 from optopt import env, agent
-from typing import Callable
+from typing import Tuple, List, Union, Callable
 do_not_provide_feature_name = ['progress', 'objective']
 def devprint(*args, **kwargs): pass
 class Manager(optopt.Management_class):
@@ -21,12 +21,12 @@ class Manager(optopt.Management_class):
 
         self.object_multiplier = {'maximize':1, 'minimize':-1}[direction]
 
-        self.Variables = env.Variable_definer()
+        self.Variables = Variable_definer()
 
         self.objective = objective
         self.config = config or optopt.Config()
         self.compiled = False
-    def compile(self, using_features:List[str]):
+    def compile(self, using_features:List[str], additional_metrics :List[optopt.Metric_wrapper] = [], additional_metric_features :List = None):
         assert not self.compiled
 
         self.Variables.freeze()
@@ -37,6 +37,18 @@ class Manager(optopt.Management_class):
         if self.config.provide_hyperparameter_info:
             self.using_features += self.Variables.get_param_names()
         self.using_features = sorted(self.using_features)
+
+        extracted_additional_metric_features = sum(additional_metric.get_metrics_names() for additional_metric in additional_metrics, [])
+        using_extracted = []
+        if additional_metric_features is not None:
+            for I in extracted_additional_metric_features:
+                if I not in additional_metric_features:
+                    warnings.warn( f"{I} not in additional_metric_features", FutureWarning)
+                else: using_extracted.append(I)
+            for I in additional_metric_features:
+                if I not in extracted_additional_metric_features:
+                    assert 0 and f"{I} not in extracted_additional_metric_features"
+        self.using_features += using_extracted
 
         self.set_observation_lock = threading.Lock()
         self.get_observation_lock = threading.Lock()
@@ -54,7 +66,7 @@ class Manager(optopt.Management_class):
 
         self.env = env.Env(self,
                                 in_feature_cnt = self.in_features, 
-                                Variable_definer = self.Variables,
+                                out_feature_cnt = self.Variables.get_param_cnt(),
                                 config = self.config)
         
         self.agent = agent.Agent(self, self.env, config = self.config)
@@ -62,9 +74,9 @@ class Manager(optopt.Management_class):
 
         self.train_wait_new = True
         self.compiled = True
-    def get_callback(self, additional_metrics :List[optopt.Metric_wrapper] = []):
+    def get_callback(self):
         assert self.compiled
-        return simple_callback(self, self.using_features, self.objective, get_additional_metrics = additional_metrics)
+        return simple_callback(self, self.using_features, self.objective, get_additional_metrics = self.additional_metrics)
 
     def set_observation(self, infos):#obs_info, rew, done
         assert len(infos) == 3
@@ -165,3 +177,89 @@ class simple_callback(tf.keras.callbacks.Callback):
         #epoch = 0 으로 시작한다.
         obs, obj, done = self.get_info(epoch, logs)
         self.parent_callback.epoch_end(obs, obj, done)
+
+class Variable_definer(optopt.Variable_class):
+    def __init__(self):
+        self.hyper_parameters = {}
+        self.is_frozen = False
+    def freeze(self):
+        self.is_frozen = True
+        self.hyper_parameters_name = sorted(list(self.hyper_parameters.keys()))
+        self.hyper_parameters = [self.hyper_parameters[K] for K in self.hyper_parameters_name]
+    def initialize_values(self):
+        assert self.is_frozen
+        for FV, BV, proj, init_f, _, _ in self.hyper_parameters:
+            BV.assign(init_f())
+            FV.assign(proj(BV))
+    def shift_values(self, values : Union[list, np.ndarray]):
+        assert self.is_frozen
+        assert len(values) == self.get_param_cnt()
+        for [FV, BV, proj, _, func, _], v2 in zip(self.hyper_parameters, values):
+            BV.assign(func(v2))
+            FV.assign(proj(BV))
+    def get_values(self):
+        assert self.is_frozen
+        return [BV.value().numpy() for FV, BV, proj, _, _, _ in self.hyper_parameters]
+    def set_values(self, values : Union[list, np.ndarray]):
+        assert self.is_frozen
+        assert len(values) == self.get_param_cnt()
+        for [FV, BV, proj, _, _, func], v2 in zip(self.hyper_parameters, values):
+            BV.assign(func(v2))
+            FV.assign(proj(BV))
+    def uniform(self, name :str, init_v : Union[float, Tuple[float], List[float]],
+                                 shift_v : Union[float, Tuple[float], List[float]] = [-.1, .1],
+                                 min_v : float = None, max_v : float = None, 
+                                 post_processing :Callable = (lambda X:X)):
+        init_min, init_max = single_or_two_as_two(init_v)
+        shift_min, shift_max = (-shift_v, shift_v) if type(shift_v)== float else single_or_two_as_two(shift_v)
+        min_v = min_v or init_min
+        max_v = max_v or init_max
+        assert shift_min <= shift_max
+        assert min_v <= init_min
+        assert init_min <= init_max
+        assert init_max <= max_v
+        
+        if name in self.hyper_parameters:
+            warnings.warn(f"{name} is duplicated, check configration. We apply only first setting.", UserWarning)
+        
+        projector = (lambda X:post_processing(X))
+        tf_backend_Value = tf.Variable(init_min, trainable=False)
+        init_function = (lambda : (interpolation(random.random(), init_min, init_max)))
+        shift_function= (lambda R: (np.clip( tf_backend_Value + interpolation(R, shift_min, shift_max) , min_v, max_v) ))
+        compat_function= (lambda R: (interpolation(R, min_v, max_v) ))
+        tf_frontend_Value = tf.Variable(projector(tf_backend_Value), trainable=False)
+        self.hyper_parameters[name] = [tf_frontend_Value, tf_backend_Value, projector, init_function, shift_function, compat_function]
+
+
+        return tf_frontend_Value
+    def loguniform(self, name :str, init_v : Union[float, Tuple[float], List[float]],
+                                 shift_v : Union[float, Tuple[float], List[float]] = [.5, 2.],
+                                 min_v : float = None, max_v : float = None,
+                                 post_processing :Callable = (lambda X:X)):
+        init_min, init_max = single_or_two_as_two(init_v)
+        shift_min, shift_max = (1/shift_v, shift_v) if type(shift_v)== float else single_or_two_as_two(shift_v)
+        min_v = min_v or init_min
+        max_v = max_v or init_max
+        assert 0 < shift_min <= shift_max
+        assert 0 < min_v <= init_min
+        assert 0 < init_min <= init_max
+        assert 0 < init_max <= max_v
+        
+        if name in self.hyper_parameters:
+            warnings.warn(f"{name} is duplicated, check configration. We apply only first setting.", UserWarning)
+        
+        init_min = math.log(init_min)
+        init_max = math.log(init_max)
+        shift_min = math.log(shift_min)
+        shift_max = math.log(shift_max)
+        min_v = math.log(min_v)
+        max_v = math.log(max_v)
+        projector = (lambda X:post_processing(tf.exp(X)))
+        tf_backend_Value = tf.Variable(init_min, trainable=False)
+        init_function = (lambda : (interpolation(random.random(), init_min, init_max)))
+        shift_function= (lambda R: (np.clip( tf_backend_Value + interpolation(R, shift_min, shift_max) , min_v, max_v) ))
+        compat_function= (lambda R: (interpolation(R, min_v, max_v) ))
+        tf_frontend_Value = tf.Variable(projector(tf_backend_Value), trainable=False)
+        self.hyper_parameters[name] = [tf_frontend_Value, tf_backend_Value, projector, init_function, shift_function, compat_function]
+
+        return tf_frontend_Value
