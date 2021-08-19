@@ -103,7 +103,7 @@ def flood_mae_loss(flood = 0.01):
     return _sub
 class Config:
     def __init__(self, 
-                # environment setting
+                # environment interaction setting
                 action_first_epochs = False,
                 provide_hyperparameter_info = False,
                 guarantee_env_reward_at_reset = False,
@@ -144,7 +144,7 @@ class Config:
                 savedir = tempfile.gettempdir(),
                 dtype = 'float32',
                 verbose = 0):
-        # environment setting
+        # environment interaction setting
         self.action_first_epochs = action_first_epochs
         self.provide_hyperparameter_info = provide_hyperparameter_info
         self.guarantee_env_reward_at_reset = guarantee_env_reward_at_reset
