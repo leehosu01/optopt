@@ -5,9 +5,11 @@ import numpy as np
 import threading
 from queue import Queue
 from typing import List, Dict
+import random
 import optopt
 from optopt import env, agent
 from typing import Tuple, List, Union, Callable
+
 do_not_provide_feature_name = ['progress', 'objective']
 def devprint(*args, **kwargs): pass
 class Manager(optopt.Management_class):
@@ -38,6 +40,7 @@ class Manager(optopt.Management_class):
             self.using_features += self.Variables.get_param_names()
         self.using_features = sorted(self.using_features)
 
+        self.additional_metrics = additional_metrics
         extracted_additional_metric_features = sum((additional_metric.get_metrics_names() for additional_metric in additional_metrics), [])
         using_extracted = []
         if additional_metric_features is not None:

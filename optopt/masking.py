@@ -46,7 +46,7 @@ def _masking(shape, dtype):
             return sum(reduced) / len(reduced)
         if time.perf_counter() == time.perf_counter():
             warnings.warn("system have low time precision, we use default function")
-            return uniform_float16_based_masking
+            return _masking.default_fn
         inputs = tf.ones(shape, dtype = dtype)
         prob = 0.05
         best_time = float('inf')
@@ -71,18 +71,21 @@ _masking.fns = [
        uniform_float16_based_masking,
        uniform_float32_based_masking,
        uniform_int_based_masking]
-def masking(inputs, is_null_mask, masking_rate, provide_is_null = True):
+_masking.default_fn = uniform_float16_based_masking
+def masking(inputs, is_null__mask, masking_rate, provide_is_null = True, dynamic = False):
     #if null, mark as one
     #if no null in input, provide None 
     #if provide_is_null == False, provide "is not null infomation"
-    if is_null_mask is None: is_not_null_mask = tf.ones_like(inputs, dtype = inputs.dtype)
-    else: is_not_null_mask = 1 - is_null_mask
-    inputs = inputs * is_not_null_mask
-
-    mask_generate_fn = _masking(inputs.shape, inputs.dtype)#average = 1 - masking_rate
-    mask = mask_generate_fn(inputs.shape, inputs.dtype, masking_rate)
+    if is_null__mask is None: is_not_null__mask = tf.ones_like(inputs, dtype = inputs.dtype)
+    else: is_not_null__mask = 1 - is_null__mask
+    inputs = inputs * is_not_null__mask
+    if dynamic:
+        try: mask_generate_fn = _masking(tuple(tf.shape(inputs).numpy()), inputs.dtype)#average = 1 - masking_rate
+        except: mask_generate_fn = _masking.default_fn
+    else: mask_generate_fn = _masking.default_fn
+    mask = mask_generate_fn(inputs, masking_rate)
     masked_input = inputs * mask
-    masked_not_null = is_not_null_mask * mask
+    masked_not_null = is_not_null__mask * mask
     if provide_is_null: masked_null_method = 1 - masked_not_null
     else: masked_null_method = masked_not_null
 
