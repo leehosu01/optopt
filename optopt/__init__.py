@@ -83,54 +83,99 @@ class Exp_moving_std_metric(tf.keras.metrics.Metric):
         self.exp_moving_mean.assign((self.exp_moving_mean * self.momentum) + (1 - self.momentum) * value)
     def result(self):
         return self.exp_moving_var ** 0.5
+class apply_relu_reward_by_mul(float):
+    def __new__(self, value):
+        return float.__new__(self, value)
+    def __init__(self, value):
+        float.__init__(value)
+        self.value = value
+    def __imul__(self, X):
+        raise Exception("do not call __imul__ method")
+    def __mul__(self, X):
+        print("Successfully applying maximum reward via __mul__")
+        return tf.maximum(0., self.value * X)
+    def __rmul__(self, X):
+        print("Successfully applying maximum reward via __rmul__")
+        return tf.maximum(0., self.value * X)
+def flood_mae_loss(flood = 0.01):
+    def _sub(y_true, y_pred):
+        return tf.reduce_mean(tf.abs(tf.abs(y_true - y_pred) - flood)+flood)
+    return _sub
 class Config:
     def __init__(self, 
-                action_first_epochs = True,
+                # environment setting
+                action_first_epochs = False,
                 provide_hyperparameter_info = False,
                 guarantee_env_reward_at_reset = False,
                 strategy :tf.distribute.Strategy = None,
-                lstm_size = [256],
+
+                # network option
+                network_units = [256],
+                masking_rate  = 0.,
+
+                # training option
+                use_maximum_reward :bool= True,
+                gamma :float = 1.00,
+                target_update_tau :float = 0.005,
+
+                collect_episodes_random_policy :int = 8,
+                collect_episodes_agent_policy :int = 1,
+                training_steps_after_collect  :int = 1,
+                training_batch_size = 128,
+
+                # optimizer option
+                critic_optimizer_generate_fn = lambda : tf.keras.optimizers.Adam(0.001),
+                actor_optimizer_generate_fn = lambda : tf.keras.optimizers.Adam(0.001),
+
+
+                #reinforcement TD3_agent option
+                exploration_noise_std  = 0.05,
+                target_policy_noise = 0.01,
+                target_policy_noise_clip = 0.05,
+                td_errors_loss_fn = flood_mae_loss(flood = 0.01),
+
+
+                #reinforcement agent backend option
                 replay_buffer_capacity = 10000,
                 sequence_length = 5,
-                train_batch_size = 32,
-                train_iterations = 1,
-                parallel_env_cnt = None,
-                critic_learning_rate = 3e-4,
-                actor_learning_rate = 3e-4,
-                alpha_learning_rate = 3e-4,
-                target_update_tau = 0.005,
-                target_update_period = 1,
-                gamma = 1.00 ,
-                log_interval = 1,
-                collect_episodes_for_training = 1,
-                collect_episodes_for_env_testing = 0,
                 policy_save_interval = 4,
                 savedir = tempfile.gettempdir(),
                 dtype = 'float32',
                 verbose = 0):
-        assert parallel_env_cnt == None# still not implemented!
-        if action_first_epochs:
-            warnings.warn(f"action_first_epochs = {action_first_epochs}, they act without information", UserWarning)
+        # environment setting
         self.action_first_epochs = action_first_epochs
         self.provide_hyperparameter_info = provide_hyperparameter_info
         self.guarantee_env_reward_at_reset = guarantee_env_reward_at_reset
-        #self.info_dropout = info_dropout
-        self.strategy = strategy or tf.distribute.get_strategy()
-        self.lstm_size = lstm_size
+        self.strategy = strategy
+
+        # network option
+        self.network_units = network_units
+        self.masking_rate  = masking_rate
+
+        # training option
+        self.gamma = apply_relu_reward_by_mul(gamma) if use_maximum_reward else gamma
+        self.target_update_tau = target_update_tau
+
+        assert collect_episodes_random_policy > 0
+        self.collect_episodes_random_policy = collect_episodes_random_policy
+        self.collect_episodes_agent_policy = collect_episodes_agent_policy
+        self.training_steps_after_collect  = training_steps_after_collect
+        self.training_batch_size = training_batch_size
+
+        # optimizer option
+        self.critic_optimizer_generate_fn = critic_optimizer_generate_fn
+        self.actor_optimizer_generate_fn = actor_optimizer_generate_fn
+        
+        #reinforcement TD3_agent option
+        self.exploration_noise_std = exploration_noise_std
+        self.target_policy_noise = target_policy_noise
+        self.target_policy_noise_clip = target_policy_noise_clip
+        self.td_errors_loss_fn = td_errors_loss_fn 
+
+
+        #reinforcement agent backend option
         self.replay_buffer_capacity = replay_buffer_capacity
         self.sequence_length = sequence_length
-        self.train_batch_size = train_batch_size
-        self.train_iterations = train_iterations
-        self.parallel_env_cnt = parallel_env_cnt
-        self.critic_learning_rate =critic_learning_rate
-        self.actor_learning_rate = actor_learning_rate
-        self.alpha_learning_rate = alpha_learning_rate
-        self.target_update_tau = target_update_tau
-        self.target_update_period = target_update_period
-        self.gamma = gamma 
-        self.log_interval = log_interval
-        self.collect_episodes_for_training = collect_episodes_for_training
-        self.collect_episodes_for_env_testing = collect_episodes_for_env_testing
         self.policy_save_interval = policy_save_interval
         self.savedir = savedir
         self.dtype = dtype
