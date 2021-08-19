@@ -178,6 +178,14 @@ class simple_callback(tf.keras.callbacks.Callback):
         obs, obj, done = self.get_info(epoch, logs)
         self.parent_callback.epoch_end(obs, obj, done)
 
+def single_or_two_as_two(X):
+    if type(X) == float: X = [X, X]
+    if len(X) == 1: X = [X[0], X[0]] 
+    assert len(X) == 2
+    return X
+def interpolation(Rate:float, min_v:float, max_v:float):
+    return min_v + Rate * (max_v - min_v)
+    
 class Variable_definer(optopt.Variable_class):
     def __init__(self):
         self.hyper_parameters = {}

@@ -90,11 +90,3 @@ class Env(optopt.Environment_class):
       self.wait_reset = True
       return ts.termination(Obs, Rew)
     else: return ts.transition(*self.cast(Obs, Rew, 1. - self._episode_ended))
-
-def single_or_two_as_two(X):
-    if type(X) == float: X = [X, X]
-    if len(X) == 1: X = [X[0], X[0]] 
-    assert len(X) == 2
-    return X
-def interpolation(Rate:float, min_v:float, max_v:float):
-    return min_v + Rate * (max_v - min_v)
