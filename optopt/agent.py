@@ -58,19 +58,25 @@ class Agent(optopt.Agency_class):
         model = opt_network.actor_deterministic_standard_network(
             observation_spec, action_spec, 
             units = self.config.network_unit,
-            masking_rate = self.config.masking_rate )
+            masking_rate = self.config.masking_rate,
+            config = self.config,
+            name = 'actor_network')
         params['actor_network'] = model
         
         model = opt_network.critic_standard_network(
             (observation_spec, action_spec), 
             units = self.config.network_unit,
-            masking_rate = self.config.masking_rate )
+            masking_rate = self.config.masking_rate,
+            config = self.config,
+            name = 'critic_network_1')
         params['critic_network'] = model
         
         model = opt_network.critic_standard_network(
             (observation_spec, action_spec), 
             units = self.config.network_unit,
-            masking_rate = self.config.masking_rate )
+            masking_rate = self.config.masking_rate,
+            config = self.config,
+            name = 'critic_network_2')
         params['critic_network_2'] = model
         """
         model = opt_network.actor_deterministic_rnn_network(
@@ -100,7 +106,7 @@ class Agent(optopt.Agency_class):
                 critic_optimizer=self.config.critic_optimizer_generate_fn(),
                 train_step_counter=train_step,
 
-                gamma = self.gamma,
+                gamma = self.config.gamma,
                 target_update_tau = self.config.target_update_tau,
                 exploration_noise_std = self.config.exploration_noise_std,
                 target_policy_noise = self.config.target_policy_noise,
