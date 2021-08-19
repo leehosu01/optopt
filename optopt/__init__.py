@@ -121,7 +121,7 @@ class Config:
                 target_update_tau :float = 0.005,
 
                 collect_episodes_random_policy :int = 8,
-                collect_episodes_agent_policy :int = 1,
+                collect_episodes_each_run :int = 1,
                 training_steps_after_collect  :int = 1,
                 training_batch_size = 128,
 
@@ -162,7 +162,7 @@ class Config:
 
         assert collect_episodes_random_policy > 0
         self.collect_episodes_random_policy = collect_episodes_random_policy
-        self.collect_episodes_agent_policy = collect_episodes_agent_policy
+        self.collect_episodes_each_run = collect_episodes_each_run
         self.training_steps_after_collect  = training_steps_after_collect
         self.training_batch_size = training_batch_size
 
