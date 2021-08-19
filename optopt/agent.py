@@ -55,6 +55,24 @@ class Agent(optopt.Agency_class):
         observation_spec, action_spec, time_step_spec = spec_utils.get_tensor_specs(collect_env)
     
         params = {}
+        model = opt_network.actor_deterministic_standard_network(
+            observation_spec, action_spec, 
+            units = self.config.network_unit,
+            masking_rate = self.config.masking_rate )
+        params['actor_network'] = model
+        
+        model = opt_network.critic_standard_network(
+            (observation_spec, action_spec), 
+            units = self.config.network_unit,
+            masking_rate = self.config.masking_rate )
+        params['critic_network'] = model
+        
+        model = opt_network.critic_standard_network(
+            (observation_spec, action_spec), 
+            units = self.config.network_unit,
+            masking_rate = self.config.masking_rate )
+        params['critic_network_2'] = model
+        """
         model = opt_network.actor_deterministic_rnn_network(
                     observation_spec, action_spec, preprocessing_layers=opt_network.Exp_normalization_layer(clip = 2),
                     preprocessing_combiner=tf.keras.layers.Concatenate(axis=-1),
@@ -73,18 +91,22 @@ class Agent(optopt.Agency_class):
                     name='ValueRnnNetwork'
                 )
         params['critic_network'] = model
-
+        """
         train_step = self.train_step = train_utils.create_train_step()
         self.tf_agent = tf_agent = tf_agents.agents.Td3Agent(
                 time_step_spec,
                 action_spec,
-                actor_optimizer=tf.keras.optimizers.Adam(
-                    learning_rate=self.config.actor_learning_rate),
-                critic_optimizer=tf.keras.optimizers.Adam(
-                    learning_rate=self.config.critic_learning_rate),
+                actor_optimizer=self.config.actor_optimizer_generate_fn(),
+                critic_optimizer=self.config.critic_optimizer_generate_fn(),
                 train_step_counter=train_step,
-                target_update_tau=self.config.target_update_tau,
-                gamma=self.config.gamma,
+
+                gamma = self.gamma,
+                target_update_tau = self.config.target_update_tau,
+                exploration_noise_std = self.config.exploration_noise_std,
+                target_policy_noise = self.config.target_policy_noise,
+                target_policy_noise_clip = self.config.target_policy_noise_clip,
+                td_errors_loss_fn = self.config.td_errors_loss_fn,
+
                 **params)
 
         tf_agent.initialize()
@@ -109,7 +131,7 @@ class Agent(optopt.Agency_class):
                             table_name=table_name,
                             local_server=reverb_server)
         dataset = reverb_replay.as_dataset(
-            sample_batch_size=self.config.train_batch_size,
+            sample_batch_size=self.config.training_batch_size,
             num_steps=self.config.sequence_length )
         _experience_dataset_fn = lambda: dataset
         def experience_dataset_fn():
@@ -129,12 +151,12 @@ class Agent(optopt.Agency_class):
                             table_name,
                             sequence_length=self.config.sequence_length,
                             stride_length=1, **params)
-        if self.config.collect_episodes_for_env_testing:
+        if self.config.collect_episodes_random_policy:
             self.initial_collect_actor = actor.Actor(
                             collect_env,
                             random_policy,
                             train_step,
-                            episodes_per_run=self.config.collect_episodes_for_env_testing,
+                            episodes_per_run=self.config.collect_episodes_random_policy,
                             observers=[rb_observer])
                             
         env_step_metric = py_metrics.EnvironmentSteps()
@@ -142,7 +164,7 @@ class Agent(optopt.Agency_class):
                             collect_env,
                             collect_policy,
                             train_step,
-                            episodes_per_run=self.config.collect_episodes_for_training,
+                            episodes_per_run=self.config.collect_episodes_per_run,
                             metrics=actor.collect_metrics(10),
                             summary_dir=os.path.join(self.config.savedir, learner.TRAIN_DIR),
                             observers=[rb_observer, env_step_metric])
@@ -176,7 +198,11 @@ class Agent(optopt.Agency_class):
         assert self.reach_prepare
         assert self.finish_prepare
 
-        try: self.initial_collect_actor.run()
+        try:
+            self.initial_collect_actor.run()
+            
+            loss_info = self.agent_learner.run(iterations=int(self.config.training_steps_after_collect) )
+            self.history.append(loss_info.loss.numpy())
         except: pass
         self.reach_start = True
         episode = 0  
@@ -186,7 +212,7 @@ class Agent(optopt.Agency_class):
                 self.collect_actor.run()
             episode += 1
 
-            loss_info = self.agent_learner.run(iterations=int(self.config.train_iterations) )
+            loss_info = self.agent_learner.run(iterations=int(self.config.training_steps_after_collect) )
             self.history.append(loss_info.loss.numpy())
             if self.config.verbose and episode % self.config.verbose == 0:
                 print(np.mean(self.history[-self.config.verbose]))
