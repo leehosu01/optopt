@@ -107,6 +107,8 @@ class Config:
                 action_first_epochs = False,
                 provide_hyperparameter_info = False,
                 guarantee_env_reward_at_reset = False,
+
+                # inference strategy 
                 strategy :tf.distribute.Strategy = None,
 
                 # network option
@@ -146,6 +148,8 @@ class Config:
         self.action_first_epochs = action_first_epochs
         self.provide_hyperparameter_info = provide_hyperparameter_info
         self.guarantee_env_reward_at_reset = guarantee_env_reward_at_reset
+        
+        # inference strategy
         self.strategy = strategy
 
         # network option
