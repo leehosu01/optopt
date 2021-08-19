@@ -38,7 +38,7 @@ class Manager(optopt.Management_class):
             self.using_features += self.Variables.get_param_names()
         self.using_features = sorted(self.using_features)
 
-        extracted_additional_metric_features = sum(additional_metric.get_metrics_names() for additional_metric in additional_metrics, [])
+        extracted_additional_metric_features = sum((additional_metric.get_metrics_names() for additional_metric in additional_metrics), [])
         using_extracted = []
         if additional_metric_features is not None:
             for I in extracted_additional_metric_features:
