@@ -112,7 +112,7 @@ class Config:
                 strategy :tf.distribute.Strategy = None,
 
                 # network option
-                network_units = [256],
+                network_unit = 256,
                 masking_rate  = 0.,
 
                 # training option
@@ -148,12 +148,12 @@ class Config:
         self.action_first_epochs = action_first_epochs
         self.provide_hyperparameter_info = provide_hyperparameter_info
         self.guarantee_env_reward_at_reset = guarantee_env_reward_at_reset
-        
+
         # inference strategy
         self.strategy = strategy
 
         # network option
-        self.network_units = network_units
+        self.network_unit = network_unit
         self.masking_rate  = masking_rate
 
         # training option
