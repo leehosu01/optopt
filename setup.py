@@ -23,15 +23,16 @@ datafiles = []#recursive_dir_walker("ABC/*")
 
 setuptools.setup(
     name="optimizer optimizer",
-    version="0.3.3",
+    version="1.0.0",
     author="Hosu Lee",
     author_email="leehosu01@naver.com",
-    description="Control Optimizer's hyperparameter dynamically",
+    description="Realtime Control Hyperparameter",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/leehosu01/optopt",
     packages=setuptools.find_packages(),
     classifiers=[
+        'Development Status :: 2 - Pre-Alpha',
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
