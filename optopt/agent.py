@@ -5,6 +5,7 @@ Created on Fri Aug  7 13:37:10 2021
 
 @author: map
 """
+import traceback
 import tensorflow as tf
 import numpy as np
 from tensorflow.python.keras.layers.core import Lambda 
@@ -187,7 +188,9 @@ class Agent(optopt.Agency_class):
                     interval=self.config.policy_save_interval)
             learning_triggers.append(X)
         except Exception as e:
-            print("Save model skipped, error = \n", e, "\n------------------ exception report end")
+            print("Save model skipped, error = \n", e, "\n------------------ exception report end", flush = True)
+            traceback.print_exc()
+            print("\n------------------ traceback report end", flush = True)
         learning_triggers.append(triggers.StepPerSecondLogTrigger(train_step, interval=1000))
         
         self.agent_learner = agent_learner = learner.Learner(
