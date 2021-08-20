@@ -102,6 +102,18 @@ def flood_mae_loss(flood = 0.01):
         return (tf.abs(tf.abs(y_true - y_pred) - flood)+flood)
         return tf.reduce_mean(tf.abs(tf.abs(y_true - y_pred) - flood)+flood)
     return _sub
+def CosineSimilarity_loss(centered = True):
+    # important*: batch wise centered
+    def _sub(y_true, y_pred):
+        except_batch = list(range(1, y_true.shape.rank))
+        if centered:
+            y_true = y_true - tf.reduce_mean(y_true, axis = except_batch, keepdims=True)
+            y_pred = y_pred - tf.reduce_mean(y_pred, axis = except_batch, keepdims=True)
+        X = tf.reduce_sum(y_true * y_pred, axis = except_batch)
+        D = (tf.reduce_sum(y_true ** 2, axis = except_batch) ** 0.5 * tf.reduce_sum(y_pred ** 2, axis = except_batch) ** 0.5)
+        X = 1 - X / (1e-6 + D)
+        return tf.expand_dims(X, 1)
+    return _sub
 class Config:
     def __init__(self, 
                 # environment interaction setting
@@ -136,7 +148,7 @@ class Config:
                 exploration_noise_std  = 0.05,
                 target_policy_noise = 0.01,
                 target_policy_noise_clip = 0.05,
-                td_errors_loss_fn = flood_mae_loss(flood = 0.01),
+                td_errors_loss_fn = CosineSimilarity_loss(),#flood_mae_loss(flood = 0.01),
 
 
                 #reinforcement agent backend option

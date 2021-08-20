@@ -15,6 +15,17 @@ def hallucination_batch(layer :tf.keras.layers.Layer, rank : int):
         return tf.squeeze(X, axis = list(tf.range(0, rank - tf.rank(inputs), dtype = tf.int32)))
     return tf.keras.layers.Lambda(_sub)
 """
+class scaled_GlorotNormal(tf.keras.initializers.VarianceScaling):
+    def __init__(self, scale, seed=None):
+        self.scale = scale
+        super(scaled_GlorotNormal, self).__init__(
+            scale=scale,
+            mode='fan_avg',
+            distribution='truncated_normal',
+            seed=seed)
+
+    def get_config(self):
+        return {'scale':self.scale,'seed': self.seed}
 class hallucination_batch(tf.keras.layers.Layer):
     def __init__(self, layer :tf.keras.layers.Layer, rank : int):
         self.layer = layer
@@ -55,7 +66,9 @@ class actor_deterministic_standard_network(network.Network):
           hallucination_batch(tf.keras.layers.BatchNormalization(**config.batchNormalization_option), 3),
           tf.keras.layers.LSTM(units, return_state=True, return_sequences=True),
           tf.keras.layers.Dense(units, activation = 'swish'),
-          tf.keras.layers.Dense(output_tensor_spec.shape[-1], activation = 'sigmoid', kernel_initializer = 'zeros'),
+          tf.keras.layers.Dense(output_tensor_spec.shape[-1],
+                                activation = 'sigmoid',
+                                kernel_initializer = scaled_GlorotNormal(1e-2)),
           tf.keras.layers.Lambda(lambda X: X * (max_v - min_v) + min_v)
         ], name = f"{name}/submodel")
         
@@ -82,7 +95,7 @@ class critic_standard_network(network.Network):
           hallucination_batch(tf.keras.layers.BatchNormalization(**config.batchNormalization_option), 3),
           tf.keras.layers.LSTM(units, return_state=True, return_sequences=True),
           tf.keras.layers.Dense(units, activation = 'swish'),
-          tf.keras.layers.Dense(1, kernel_initializer = 'zeros')
+          tf.keras.layers.Dense(1, kernel_initializer = scaled_GlorotNormal(1e-2))
         ], input_spec = input_tensor_spec, name = f"{name}/submodel")
 
         super(critic_standard_network, self).__init__(
