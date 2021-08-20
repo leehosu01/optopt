@@ -102,7 +102,7 @@ class custom_Td3Agent(tf_agents.agents.Td3Agent):
                 target_q_input_2,
                 next_time_steps.step_type,
                 training=False)
-            target_q_values = tf.minimum(target_q_values_1, target_q_values_2)
+            target_q_values = (target_q_values_1 + target_q_values_2) / 2
 
             td_targets = tf.stop_gradient(
                 self._reward_scale_factor * next_time_steps.reward +
