@@ -2,36 +2,36 @@ import warnings
 import tensorflow as tf
 import time
 def binominal_based_masking(inputs, prob):
-    mask = tf.random.stateless_binomial(inputs.shape, seed = [142, 332], probs = 1 - prob, counts = 1, output_dtype=inputs.dtype)
+    mask = tf.random.stateless_binomial(tf.shape(inputs), seed = [142, 332], probs = 1 - prob, counts = 1, output_dtype=inputs.dtype)
     return inputs * mask
     
 def uniform_float16_based_masking(inputs, prob):
-    mask = tf.greater(tf.random.uniform(inputs.shape, 0, 1, dtype = tf.float16), prob)
+    mask = tf.greater(tf.random.uniform(tf.shape(inputs), 0, 1, dtype = tf.float16), prob)
     return inputs * tf.cast(mask, inputs.dtype)
     
 def uniform_float32_based_masking(inputs, prob):
-    mask = tf.greater(tf.random.uniform(inputs.shape, 0, 1, dtype = tf.float32), prob)
+    mask = tf.greater(tf.random.uniform(tf.shape(inputs), 0, 1, dtype = tf.float32), prob)
     return inputs * tf.cast(mask, inputs.dtype)
     
 def uniform_int_based_masking(inputs, prob):
-    mask = tf.greater(tf.random.uniform(inputs.shape, 0, int(100//prob), dtype = tf.int32), 100)
+    mask = tf.greater(tf.random.uniform(tf.shape(inputs), 0, int(100//prob), dtype = tf.int32), 100)
     return inputs * tf.cast(mask, inputs.dtype)
 
 @tf.function
 def tf_binominal_based_masking(inputs, prob):
-    mask = tf.random.stateless_binomial(inputs.shape, seed = [142, 332], probs = 1 - prob, counts = 1, output_dtype=inputs.dtype)
+    mask = tf.random.stateless_binomial(tf.shape(inputs), seed = [142, 332], probs = 1 - prob, counts = 1, output_dtype=inputs.dtype)
     return inputs * mask
 @tf.function
 def tf_uniform_float16_based_masking(inputs, prob):
-    mask = tf.greater(tf.random.uniform(inputs.shape, 0, 1, dtype = tf.float16), prob)
+    mask = tf.greater(tf.random.uniform(tf.shape(inputs), 0, 1, dtype = tf.float16), prob)
     return inputs * tf.cast(mask, inputs.dtype)
 @tf.function
 def tf_uniform_float32_based_masking(inputs, prob):
-    mask = tf.greater(tf.random.uniform(inputs.shape, 0, 1, dtype = tf.float32), prob)
+    mask = tf.greater(tf.random.uniform(tf.shape(inputs), 0, 1, dtype = tf.float32), prob)
     return inputs * tf.cast(mask, inputs.dtype)
 @tf.function
 def tf_uniform_int_based_masking(inputs, prob):
-    mask = tf.greater(tf.random.uniform(inputs.shape, 0, int(100//prob), dtype = tf.int32), 100)
+    mask = tf.greater(tf.random.uniform(tf.shape(inputs), 0, int(100//prob), dtype = tf.int32), 100)
     return inputs * tf.cast(mask, inputs.dtype)
 
 def _masking(shape, dtype):
