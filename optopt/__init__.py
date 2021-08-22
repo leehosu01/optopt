@@ -113,10 +113,10 @@ def CosineSimilarity_loss(centered = True):
         if centered:
             y_true = pcc_norm(y_true)
             y_pred = pcc_norm(y_pred)
-            return tf.reduce_sum(y_true * y_pred, axis = except_batch, keepdims = True)
+            return tf.reduce_mean(y_true * y_pred, axis = except_batch, keepdims = True)
         y_true = tf.math.l2_normalize(y_true, axis = except_batch)
         y_pred = tf.math.l2_normalize(y_pred, axis = except_batch)
-        return tf.reduce_sum(y_true * y_pred, axis = except_batch, keepdims = True)
+        return tf.reduce_mean(y_true * y_pred, axis = except_batch, keepdims = True)
     return _sub
 class Config:
     def __init__(self, 
