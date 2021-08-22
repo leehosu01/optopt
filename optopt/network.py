@@ -51,7 +51,6 @@ class actor_deterministic_standard_network(network.Network):
                input_tensor_spec,
                output_tensor_spec,
                units :int,
-               masking_rate : float,
                config,
                name = "actor_deterministic_standard_network"):
 

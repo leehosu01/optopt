@@ -208,7 +208,6 @@ class Agent(optopt.Agency_class):
         model = opt_network.actor_deterministic_standard_network(
             observation_spec, action_spec, 
             units = self.config.network_unit,
-            masking_rate = self.config.masking_rate,
             config = self.config,
             name = 'actor_network')
         params['actor_network'] = model
@@ -216,7 +215,6 @@ class Agent(optopt.Agency_class):
         model = opt_network.critic_standard_network(
             (observation_spec, action_spec), 
             units = self.config.network_unit,
-            masking_rate = self.config.masking_rate,
             config = self.config,
             name = 'critic_network_1')
         params['critic_network'] = model
@@ -224,7 +222,6 @@ class Agent(optopt.Agency_class):
         model = opt_network.critic_standard_network(
             (observation_spec, action_spec), 
             units = self.config.network_unit,
-            masking_rate = self.config.masking_rate,
             config = self.config,
             name = 'critic_network_2')
         params['critic_network_2'] = model
