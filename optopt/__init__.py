@@ -131,12 +131,13 @@ class Config:
                 # network option
                 network_unit = 256,
                 masking_rate  = 0.,
+                dropout_rate = 0.,
+                batchNormalization_option = {"momentum": 0.9, "renorm": True, "renorm_momentum": 0.9},
 
                 # training option
                 use_maximum_reward :bool= True,
                 gamma :float = 1.00,
                 target_update_tau :float = 0.005,
-                batchNormalization_option = {"momentum": 0.9, "renorm": True, "renorm_momentum": 0.9},
 
                 collect_episodes_random_policy :int = 8,
                 collect_episodes_per_run :int = 1,
@@ -173,6 +174,7 @@ class Config:
         # network option
         self.network_unit = network_unit
         self.masking_rate  = masking_rate
+        self.dropout_rate  = dropout_rate
         self.batchNormalization_option  = batchNormalization_option
 
         # training option

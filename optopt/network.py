@@ -55,16 +55,14 @@ class actor_deterministic_standard_network(network.Network):
                config,
                name = "actor_deterministic_standard_network"):
 
-        self.masking_rate = masking_rate
 
         min_v = output_tensor_spec.minimum
         max_v = output_tensor_spec.maximum
         self.Network = tf_agents.networks.Sequential([
-          masking_layer(is_null__mask = None, masking_rate = self.masking_rate, provide_is_null = True),
+          masking_layer(is_null__mask = None, masking_rate = config.masking_rate, provide_is_null = True),
           tf.keras.layers.Dense(units, use_bias=True),
           hallucination_batch(tf.keras.layers.BatchNormalization(**config.batchNormalization_option), 3),
-          tf.keras.layers.LSTM(units, return_state=True, return_sequences=True),
-          tf.keras.layers.Dense(units, activation = 'swish'),
+          tf.keras.layers.LSTM(units, return_state=True, return_sequences=True, dropout= config.dropout_rate),
           tf.keras.layers.Dense(output_tensor_spec.shape[-1],
                                 activation = 'sigmoid',
                                 kernel_initializer = scaled_GlorotNormal(1e-2)),
@@ -81,19 +79,17 @@ class critic_standard_network(network.Network):
     def __init__(self,
                input_tensor_spec,
                units :int,
-               masking_rate : float,
                config,
                name = "critic_standard_network"):
 
-        self.masking_rate = masking_rate
 
         self.Network = tf_agents.networks.Sequential([
           tf.keras.layers.Concatenate(axis = -1),
-          masking_layer(is_null__mask = None, masking_rate = self.masking_rate, provide_is_null = True),
+          masking_layer(is_null__mask = None, masking_rate = config.masking_rate, provide_is_null = True),
           tf.keras.layers.Dense(units, use_bias=True),
           hallucination_batch(tf.keras.layers.BatchNormalization(**config.batchNormalization_option), 3),
-          tf.keras.layers.LSTM(units, return_state=True, return_sequences=True),
-          tf.keras.layers.Dense(units, activation = 'swish'),
+          tf.keras.layers.GRU(units, return_state=True, return_sequences=True, dropout= config.dropout_rate),
+          tf.keras.layers.GRU(units, return_state=True, return_sequences=True, dropout= config.dropout_rate),
           tf.keras.layers.Dense(1, kernel_initializer = scaled_GlorotNormal(1e-2))
         ], input_spec = input_tensor_spec, name = f"{name}/submodel")
 
