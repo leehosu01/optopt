@@ -109,7 +109,7 @@ def pcc_norm(X):
 def CosineSimilarity_loss(centered = True):
     # important*: batch wise centered
     def _sub(y_true, y_pred):
-        except_batch = list(range(1, X.shape.rank))
+        except_batch = list(range(1, y_true.shape.rank))
         if centered:
             y_true = pcc_norm(y_true)
             y_pred = pcc_norm(y_pred)
