@@ -102,11 +102,16 @@ class custom_Td3Agent(tf_agents.agents.Td3Agent):
                 target_q_input_2,
                 next_time_steps.step_type,
                 training=False)
-            target_q_values = (target_q_values_1 + target_q_values_2) / 2
 
-            td_targets = tf.stop_gradient(
+            td_targets1 = tf.stop_gradient(
                 self._reward_scale_factor * next_time_steps.reward +
-                self._gamma * (next_time_steps.discount * target_q_values)) # for relu reward apply
+                self._gamma * (next_time_steps.discount * target_q_values_1)) # for relu reward apply
+            td_targets2 = tf.stop_gradient(
+                self._reward_scale_factor * next_time_steps.reward +
+                self._gamma * (next_time_steps.discount * target_q_values_2)) # for relu reward apply
+            td_targets1 = optopt.pcc_norm(td_targets1)
+            td_targets2 = optopt.pcc_norm(td_targets2)
+            td_targets = (td_targets1 + td_targets2) / 2
 
             pred_input_1 = (time_steps.observation, actions)
             pred_td_targets_1, _ = self._critic_network_1(

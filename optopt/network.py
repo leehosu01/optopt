@@ -31,11 +31,10 @@ class hallucination_batch(tf.keras.layers.Layer):
         self.layer = layer
         self.rank = rank
         super(hallucination_batch, self).__init__()
-    @tf.function
     def call(self, inputs, training = False):
-        X = tf.reshape(inputs, tf.concat([tf.ones((self.rank - tf.rank(inputs), ), dtype = tf.int32), tf.shape(inputs)], axis = -1))
+        X = tf.reshape(inputs, tf.concat([tf.ones((self.rank - inputs.shape.rank, ), dtype = tf.int32), tf.shape(inputs)], axis = -1))
         X = self.layer(X, training = training)
-        return tf.reshape(X, tf.shape(X)[self.rank - tf.rank(inputs):])
+        return tf.reshape(X, tf.shape(X)[self.rank - inputs.shape.rank:])
         return tf.squeeze(X, axis = list(range(0, self.rank - len(inputs.shape))))
 class masking_layer(tf.keras.layers.Layer):
     def __init__(self, masking_rate, **kwargs):
